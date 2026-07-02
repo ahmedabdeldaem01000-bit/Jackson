@@ -1,0 +1,429 @@
+@import "tailwindcss";
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../**/*.blade.php";
+@source "../**/*.js";
+
+:root {
+    color-scheme: light;
+}
+
+body {
+    font-family: 'Cairo', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.heading-font {
+    font-family: 'Aref Ruqaa Ink', serif;
+}
+
+.appointment-image{
+animation: zoomLoop 16s ease-in-out infinite alternate;
+}
+
+@keyframes zoomLoop{
+
+    from{
+        transform: scale(1);
+    }
+
+    to{
+        transform: scale(1.15);
+    }
+
+}
+.service-card,
+.appointment-card{
+
+    position:relative;
+
+    width:200px;
+    height:200px;
+
+    border-radius:50%;
+
+    overflow:hidden;
+
+    margin:auto;
+
+}
+.service-card img{
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+    transition:
+        transform .8s ease,
+        filter .8s ease;
+
+    transform:scale(1);
+
+}
+.service-card .overlay{
+
+    position:absolute;
+
+    inset:0;
+    color:white;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+    align-items:center;
+
+    background:rgba(69,35,29,.45);
+
+    transition:.5s;
+
+}
+.service-card:hover img{
+
+    transform:scale(1.12);
+
+}
+.service-card:hover .overlay{
+
+    background:rgba(69,35,29,.70);
+
+}
+.overlay h3{
+
+    font-size:26px;
+
+    font-family:cursive;
+
+    font-weight:400;
+
+    transition:.4s;
+
+}
+.overlay span{
+
+    margin-top:10px;
+
+    font-size:22px;
+
+    transition:.4s;
+
+}
+.service-card:hover h3{
+
+    transform:translateY(-8px);
+
+}
+.service-card:hover span{
+
+    transform:translateY(6px);
+
+}
+
+.appointment-card{
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    background:#5a3026;
+
+    color:#d2a083;
+
+    text-decoration:none;
+
+    transition:.4s;
+
+}
+.appointment-card:hover{
+
+    background:#6c392d;
+
+    transform:scale(1.05);
+
+}
+.appointment-card span{
+
+    font-size:26px;
+
+    font-family:cursive;
+
+    line-height:1.2;
+
+    text-align:center;
+
+}
+@media(max-width:1024px){
+
+.service-card,
+.appointment-card{
+
+    width:240px;
+    height:240px;
+
+}
+
+.overlay h3{
+
+    font-size:36px;
+
+}
+
+}
+@media(max-width:768px){
+
+.service-card,
+.appointment-card{
+
+    width:220px;
+    height:220px;
+
+}
+
+.overlay h3{
+
+    font-size:32px;
+
+}
+
+.overlay span{
+
+    font-size:18px;
+
+}
+
+.appointment-card span{
+
+    font-size:34px;
+
+}
+
+}
+@media(max-width:500px){
+
+.service-card,
+.appointment-card{
+
+    width:200px;
+    height:200px;
+
+}
+
+}
+
+
+
+
+.testimonialSwiper{
+
+    width:100%;
+
+    padding-inline:90px;
+
+}
+
+.testimonialSwiper  .swiper-wrapper .swiper-slide{
+
+    display:flex;
+background: none;
+    justify-content:center;
+    align-items:center;
+
+}
+.testimonialSwiper .testimonial-prev,
+.testimonialSwiper .testimonial-next{
+
+    transition:.3s;
+
+}
+
+.testimonialSwiper  .testimonial-prev:hover,
+.testimonialSwiper  .testimonial-next:hover{
+
+    transform:translateY(-50%) scale(1.2);
+
+}
+
+@media(max-width:768px){
+
+.testimonialSwiper{
+
+    padding-inline:20px;
+
+}
+
+.testimonial-prev,
+.testimonial-next{
+
+    display:none;
+
+}
+
+.testimonialSwiper p{
+
+    font-size:20px;
+
+}
+
+}
+
+
+@layer components {
+
+    .appointment-input{
+
+        @apply w-full
+        border
+        border-gray-300
+        rounded
+        px-4
+        py-3
+        outline-none
+        transition
+        focus:border-[#5b3025]
+        focus:ring-2
+        focus:ring-[#c98a6a]/30;
+
+    }
+
+}
+
+.price-tab{
+
+    width:120px;
+    height:55px;
+
+    position:relative;
+
+    overflow:hidden;
+
+    border-radius:4px;
+
+}
+
+.price-tab img{
+
+    position:absolute;
+    inset:0;
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+}
+
+.price-tab::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    background:rgba(50,20,15,.55);
+
+}
+
+.price-tab span{
+
+    position:relative;
+
+    z-index:5;
+
+    color:white;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+}
+
+.price-tab.active{
+
+    transform:translateY(-4px);
+
+}
+
+.price-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-start;
+
+    gap:20px;
+
+    padding:22px 0;
+
+    border-bottom:1px dotted #cfcfcf;
+
+}
+
+.price-info h4{
+
+    color:#5b3025;
+
+    font-weight:bold;
+
+    text-transform:uppercase;
+
+}
+
+.price-info p{
+
+    margin-top:5px;
+
+    color:#666;
+
+    font-size:14px;
+
+}
+
+.price{
+
+    color:#111;
+
+    font-weight:bold;
+
+    font-size:22px;
+
+}
+
+@media(max-width:768px){
+
+.price-tab{
+
+    width:95px;
+    height:50px;
+
+}
+
+#priceTitle{
+
+    font-size:42px;
+
+}
+
+.price-row{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+}
+
+.price{
+
+    font-size:20px;
+
+}
+
+}
