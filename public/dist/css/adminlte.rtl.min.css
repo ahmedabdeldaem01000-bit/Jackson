@@ -1,0 +1,57 @@
+html,
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: "Cairo", sans-serif;
+    width: 100%;
+}
+
+.main-sidebar {
+    right: 0;
+    left: auto;
+}
+
+body.sidebar-mini .content-wrapper,
+body.sidebar-mini .main-header,
+body.sidebar-mini .main-footer {
+    margin-right: 250px !important;
+    margin-left: 0 !important;
+}
+
+body.sidebar-collapse .content-wrapper,
+body.sidebar-collapse .main-header,
+body.sidebar-collapse .main-footer {
+    margin-right: 4.6rem !important;
+}
+.brand-link {
+    text-align: center;
+}
+
+.nav-sidebar .nav-link > p {
+    margin-right: .5rem;
+    margin-left: 0;
+}
+
+.nav-sidebar .nav-link > .right,
+.nav-sidebar .nav-link > p > .right {
+    left: 1rem;
+    right: auto;
+}
+
+.content-header .breadcrumb {
+    float: left;
+}
+
+.navbar-nav {
+    flex-direction: row-reverse;
+}
+
+.navbar-nav.ml-auto {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+.navbar-nav.mr-auto {
+    margin-right: 0 !important;
+    margin-left: auto !important;
+}

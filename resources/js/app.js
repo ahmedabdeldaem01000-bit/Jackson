@@ -49,6 +49,7 @@ new Swiper(".testimonialSwiper", {
 
 // const navbar = document.getElementById('navbar');
 const about = document.getElementById('about');
+const login = document.getElementById('login');
 // const list = document.getElementById('list');
 
 
@@ -58,10 +59,14 @@ const appointment = document.getElementById('appointment');
 const observer = new IntersectionObserver(
     ([entry]) => {
 
-        if (entry.isIntersecting) {
-            appointment.classList.add('active');
-        } else {
-            appointment.classList.remove('active');
+        if (entry.target.id === "appointment") {
+
+            if (entry.isIntersecting) {
+                appointment.classList.add("active");
+            } else {
+                appointment.classList.remove("active");
+            }
+
         }
 
     },
@@ -70,9 +75,13 @@ const observer = new IntersectionObserver(
     }
 );
 
-observer.observe(appointment);
-observer.observe(about);
+if (appointment) {
+    observer.observe(appointment);
+}
 
+if (about) {
+    observer.observe(about);
+}
 
 
 //  const menuBtn = document.getElementById("menuBtn");

@@ -1,5 +1,6 @@
 <nav id="navbar"
-    class="fixed top-0 left-0 z-50 w-full transition-all duration-500">
+ {{ request()->routeIs('login', 'register') ? 'bg-white shadow-lg' : 'bg-transparent' }}
+     class="fixed top-0 left-0 z-50 w-full transition-all duration-500">
 
     <div
         class="max-w-[1400px] mx-auto flex items-center justify-between px-6 lg:px-12 py-7 transition-all duration-500 navbar-container">
@@ -15,17 +16,31 @@
 
         <ul
             id="list"
+             {{ request()->routeIs('login', 'signup') ? 'text-black' : 'text-white' }}
             class="hidden lg:flex items-center gap-8 text-sm font-semibold tracking-[2px] text-white transition-all duration-300">
 
-            <li><a href="#">الرئيسية</a></li>
+            <li><a href="{{ route('home') }}">الرئيسية</a></li>
             <li><a href="#about">من نحن</a></li>
             <li><a href="#services">خدماتنا</a></li>
             <li><a href="#booking">الحجز</a></li>
             <li><a href="#prices">الأسعار</a></li>
             <li><a href="#locations">الفروع</a></li>
-            <li><a href="#news">الأخبار</a></li>
             <li><a href="#contact">تواصل معنا</a></li>
+@auth
+    <li>
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit">تسجيل الخروج</button>
+        </form>
+    </li>
+@endauth
 
+@guest
+    <li>
+        <a href="{{ route('login') }}">تسجيل الدخول</a>
+    </li>
+@endguest
+            
         </ul>
 
         <div class="flex items-center gap-5">
