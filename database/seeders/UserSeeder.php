@@ -14,10 +14,17 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+
+    $user = User::factory(50)->create();
+     $user->each(function ($user) {
+            $user->assignRole('customer');
+        });
+
            $admin = User::firstOrCreate(
-            ['email' => 'admin@barber.com'],
+            ['email' => 'admin@gmail.com'],
             [
                 'name' => 'Admin',
+                'phone' => '1234567890',
                 'password' => Hash::make('12345678'),
             ]
         );
@@ -25,9 +32,10 @@ class UserSeeder extends Seeder
         $admin->assignRole('admin');
 
         $employee = User::firstOrCreate(
-            ['email' => 'employee@barber.com'], 
+            ['email' => 'employee@gmail.com'], 
             [
                 'name' => 'Employee',
+                'phone' => '0987654321',
                 'password' => Hash::make('12345678'),
             ]
         );

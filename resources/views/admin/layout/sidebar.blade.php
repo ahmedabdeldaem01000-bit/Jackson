@@ -49,13 +49,12 @@
         </li>
 
 
-
-        <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.products.*') ? 'menu-open' : '' }}">
-          <a href="#" class="nav-link ">
+       <!-- parent -->
+        <li class="nav-item {{ request()->routeIs('pages.employees.*') ? 'menu-open' : '' }}">
+        <a href="{{ route('employees.index') }}"     class="nav-link {{ request()->routeIs('employees.index') ? 'active' : '' }}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
             <p>
-              Products
+              الموظفين
               <i class="right fas fa-angle-left"></i>
             </p>
           </a>
@@ -63,17 +62,46 @@
           <ul class="nav nav-treeview">
             <!-- sup child -->
             <li class="nav-item">
-              <a href="#"
-                class="nav-link #">
+              <a href="{{ route('employees.create') }}"
+                class="nav-link {{ request()->routeIs('employees.create') ? 'active' : '' }}">
                 <i class="far fa-circle nav-icon"></i>
-                <p>Create Product</p>
+                <p>انشاء موظف جديد</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#"
-                class="nav-link #">
+              <a href="{{ route('employees.index') }}"
+                class="nav-link {{ request()->routeIs('employees.index') ? 'active' : '' }}">
                 <i class="far fa-circle nav-icon"></i>
-                <p>All Product</p>
+                <p>جميع الموظفين</p>
+              </a>
+            </li>
+
+          </ul>
+        </li>
+       <!-- parent -->
+        <li class="nav-item {{ request()->routeIs('pages.users.*') ? 'menu-open' : '' }}">
+        <a href="{{ route('users.index') }}"     class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>
+              العملاء
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <!-- child -->
+          <ul class="nav nav-treeview">
+            <!-- sup child -->
+            <li class="nav-item">
+              <a href="{{ route('users.create') }}"
+                class="nav-link {{ request()->routeIs('users.create') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>انشاء عميل جديد</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ route('users.index') }}"
+                class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>جميع العملاء</p>
               </a>
             </li>
 
@@ -81,7 +109,64 @@
         </li>
 
  
+   <!-- parent -->
+        <li class="nav-item {{ request()->routeIs('pages.bookings.*') ? 'menu-open' : '' }}">
+        <a href="{{ route('bookings.index') }}"     class="nav-link {{ request()->routeIs('bookings.index') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>
+              الحجوزات
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <!-- child -->
+          <ul class="nav nav-treeview">
+            <!-- sup child -->
+            <li class="nav-item">
+              <a href="{{ route('bookings.create') }}"
+                class="nav-link {{ request()->routeIs('bookings.create') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>انشاء الخحوزات جديد</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ route('bookings.index') }}"
+                class="nav-link {{ request()->routeIs('bookings.index') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>جميع الحجوزات</p>
+              </a>
+            </li>
 
+          </ul>
+        </li>
+   <!-- parent -->
+        <li class="nav-item {{ request()->routeIs('pages.services.*') ? 'menu-open' : '' }}">
+        <a href="{{ route('services.index') }}"     class="nav-link {{ request()->routeIs('services.index') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-tachometer-alt"></i>
+            <p>
+               الخدمات
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <!-- child -->
+          <ul class="nav nav-treeview">
+            <!-- sup child -->
+            <li class="nav-item">
+              <a href="{{ route('services.create') }}"
+                class="nav-link {{ request()->routeIs('services.create') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>انشاء خدمه جديد</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ route('services.index') }}"
+                class="nav-link {{ request()->routeIs('services.index') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>جميع الحجوزات</p>
+              </a>
+            </li>
+
+          </ul>
+        </li>
 
 
 

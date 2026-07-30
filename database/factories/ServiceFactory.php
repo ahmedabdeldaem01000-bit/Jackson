@@ -15,10 +15,25 @@ class ServiceFactory extends Factory
      *
      * @return array<string, mixed>
      */
+    protected $model = Service::class;
+
     public function definition(): array
     {
         return [
-            //
+            'name' => fake()->unique()->randomElement([
+                'الشعر',
+                'اللحية',
+                'العناية بالبشرة',
+                'الصبغات',
+                'الباقات',
+                'الأطفال',
+                'VIP',
+                'العريس',
+                'العناية بالشعر',
+                'الواكس',
+                'الكيراتين',
+                'الحمام المغربي',
+            ]),
         ];
     }
 }

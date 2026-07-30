@@ -10,7 +10,10 @@ class Booking extends Model
 {
     /** @use HasFactory<\Database\Factories\BookingFactory> */
     use HasFactory;
-    protected $fillable=['time','turn','service_id','user_id','employee_id'];
+    protected $fillable=['time','status','date','service_id','user_id','employee_id'];
+    protected $casts = [
+    'date' => 'date',
+];
 
         public function service(): BelongsTo
     {
@@ -24,6 +27,6 @@ class Booking extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employees::class);
+        return $this->belongsTo(Employee::class);
     }
 }
