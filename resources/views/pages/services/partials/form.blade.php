@@ -94,7 +94,7 @@
                     </th>
 
                     <th class="w-24">
-
+                        السعر
                     </th>
 
                 </tr>
@@ -125,6 +125,15 @@
                             <input
                                 type="number"
                                 wire:model.live="subServices.{{ $index }}.duration"
+                                class="w-full rounded-lg border-gray-300"
+                            >
+
+                        </td>
+                        <td class="px-6 py-4">
+
+                            <input
+                                type="text"
+                                wire:model.live="subServices.{{ $index }}.price"
                                 class="w-full rounded-lg border-gray-300"
                             >
 

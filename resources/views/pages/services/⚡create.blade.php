@@ -32,6 +32,11 @@ new class extends Component
                 'string',
                 'max:255',
             ],
+            'subServices.*.price' => [
+                'required',
+                'string',
+                'max:255',
+            ],
 
             'subServices.*.duration' => [
                 'required',
@@ -48,6 +53,7 @@ new class extends Component
             [
                 'name' => '',
                 'duration' => '',
+                'price' => '',
             ]
         ];
     }
@@ -57,6 +63,7 @@ new class extends Component
         $this->subServices[] = [
             'name' => '',
             'duration' => '',
+            'price' => '',
         ];
     }
 
@@ -90,6 +97,7 @@ new class extends Component
                 $service->subServices()->create([
 
                     'name' => $subService['name'],
+                    'price' => $subService['price'],
 
                     'duration' => $subService['duration'],
 

@@ -141,6 +141,9 @@
                 <th class="text-center p-4">
                     العدد
                 </th>
+                <th class="text-center p-4">
+                    السعر
+                </th>
 
                 <th class="text-center p-4">
                     الإجراءات
@@ -195,10 +198,15 @@
                         {{ $service->subServices->count() }}
 
                     </td>
+                    <td class="text-center">
+
+                        {{ $sup->price }}
+
+                    </td>
 
                     <td>
 
-                        <div class="flex justify-center gap-2">
+                        <div class="flex justify-center">
 
                             <a
                                 href="{{ route('services.edit',$service) }}"
