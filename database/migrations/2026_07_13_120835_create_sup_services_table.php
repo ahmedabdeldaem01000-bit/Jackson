@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('duration');
+            $table->string('price');
             $table->foreignId('service_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });

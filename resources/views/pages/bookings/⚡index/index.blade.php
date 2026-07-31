@@ -64,11 +64,13 @@
             <select wire:model.live="status"
                 class="py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
                 <option value="">حاله الحجز</option>
-                <option value="active">اكتمل</option>
-                <option value="inactive">في الانتظار</option>
-                <option value="inactive">الغاء</option>
+                <option value="completed">اكتمل</option>
+                <option value="pending">في الانتظار</option>
+                <option value="cancelled">الغاء</option>
             </select>
         </div>
+
+        
 
         {{-- Reset Filters --}}
         <button wire:click="resetFilters"
@@ -247,11 +249,11 @@
                             </div>
                         </div>
                         <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                            <button wire:click="deleteEmployee" type="button"
+                            <button wire:click="deleteBooking" type="button"
                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">
                                 Delete
                             </button>
-                            <button wire:click="showDeleteModal = false" type="button"
+                            <button wire:click="closeDeleteModal" type="button"
                                 class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
                                 Cancel
                             </button>

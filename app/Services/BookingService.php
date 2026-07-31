@@ -128,10 +128,9 @@ public function hasConflict(
      */
     public function complete(Booking $booking): bool
     {
-            $bookingDate = Carbon::parse(
-                $booking->date.' '.$booking->time
-            );
-
+            $bookingDate = Carbon::parse($booking->date)
+    ->setTimeFromTimeString($booking->time);
+        
         if (now()->lt($bookingDate)) {
             return false;
         }
@@ -156,8 +155,8 @@ public function hasConflict(
     /**
      * حذف الحجز
      */
-    public function delete(Booking $booking): bool
-    {
-        return $booking->delete();
-    }
+ public function deleteById(int $id): bool
+{
+    return Booking::findOrFail($id)->delete();
+}
 }

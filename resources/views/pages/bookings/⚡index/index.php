@@ -1,6 +1,7 @@
 <?php
 use App\Models\Booking;
 use App\Models\Employee;
+use App\Services\BookingService;
 use Carbon\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -16,6 +17,7 @@ new #[Title('Bookings')] class extends Component {
     public $search = '';
 
     public $time = '';
+    public $status = '';
  
     public $sortField = 'time';
     public $sortDirection = 'asc';
@@ -28,6 +30,7 @@ new #[Title('Bookings')] class extends Component {
 
     public $showDeleteModal = false;
     public $BookingToDelete = null;
+    
     public $BookingToComplete = null;
 
     protected $queryString = [
@@ -46,6 +49,7 @@ new #[Title('Bookings')] class extends Component {
         return Booking::query()
             ->when($this->search, fn($q) => $q->search($this->search))
             ->when($this->time, fn($q) => $q->where('time', $this->time))
+            ->when($this->status, fn($q) => $q->where('status', $this->status))
            
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
@@ -64,6 +68,12 @@ new #[Title('Bookings')] class extends Component {
         $this->resetPage();
     }
 
+        #[Computed]
+    public function status()
+    {
+        return Booking::distinct('status')->pluck('status')->sort();
+    }
+
     /* Reset Filters */
     public function updateSearch()
     {
@@ -79,7 +89,7 @@ new #[Title('Bookings')] class extends Component {
     }
     public function resetFilters()
     {
-        $this->reset(['search', 'time']);
+        $this->reset(['search', 'time','status']);
         $this->resetPage();
     }
 
@@ -108,8 +118,64 @@ new #[Title('Bookings')] class extends Component {
 
 
 
+    public function completed($bookingId, BookingService $bookingService)
+    {
+        $booking = Booking::findOrFail($bookingId);
+
+        if (!$bookingService->complete($booking)) {
+
+            session()->flash(
+                'error',
+                'لا يمكن إنهاء الحجز قبل موعده.'
+            );
+
+            return;
+        }
+
+        session()->flash(
+            'success',
+            'تم إنهاء الحجز بنجاح.'
+        );
+    }
+
+    public function cancelled($bookingId, BookingService $bookingService)
+    {
+        $booking = Booking::findOrFail($bookingId);
+
+        $bookingService->cancel($booking);
+
+        session()->flash(
+            'success',
+            'تم إلغاء الحجز.'
+        );
+    }
+
  
+public function confirmDelete($bookingId)
+{
+    $this->BookingToDelete = $bookingId;
+
+    $this->showDeleteModal = true;
+}
+public function deleteBooking(BookingService $bookingService)
+{
+    $bookingService->deleteById($this->BookingToDelete);
+
+    $this->closeDeleteModal();
+
+    session()->flash(
+        'success',
+        'تم حذف الحجز بنجاح.'
+    );
+}
+
+
  
+ public function closeDeleteModal()
+{
+    $this->showDeleteModal = false;
+    $this->BookingToDelete = null;
+}
  
 
 };

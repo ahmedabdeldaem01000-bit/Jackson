@@ -125,7 +125,7 @@
               <a href="{{ route('bookings.create') }}"
                 class="nav-link {{ request()->routeIs('bookings.create') ? 'active' : '' }}">
                 <i class="far fa-circle nav-icon"></i>
-                <p>انشاء الخحوزات جديد</p>
+                <p>انشاء حجوزات جديد</p>
               </a>
             </li>
             <li class="nav-item">

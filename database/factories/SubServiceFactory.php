@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Service;
 use App\Models\SubService;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Testing\Fakes\Fake;
 
 /**
  * @extends Factory<SubService>
@@ -22,6 +23,7 @@ class SubServiceFactory extends Factory
     {
         return [
             'service_id' => Service::factory(),
+            'price' =>Fake()->numberBetween(20,50),
 
             'name' => fake()->randomElement([
                 'قص كلاسيك',

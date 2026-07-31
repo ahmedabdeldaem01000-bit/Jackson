@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,4 +30,21 @@ class Booking extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+
+    public function scopeSearch(Builder $query, ?string $search): Builder
+{
+    return $query->where(function ($query) use ($search) {
+
+        $query->whereHas('user', function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+            ->orWhere('email', 'like', "%{$search}%")
+              ->orWhere('phone', 'like', "%{$search}%");
+        });
+
+      
+ 
+
+    });
+}
+
 }

@@ -10,7 +10,7 @@ class SubService extends Model
 {
     /** @use HasFactory<\Database\Factories\SubServiceFactory> */
     use HasFactory;
-    protected $fillable=['name','duration','service_id'];
+    protected $fillable=['name','duration','service_id','price'];
         public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
