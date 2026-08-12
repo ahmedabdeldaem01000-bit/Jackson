@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -20,7 +21,7 @@ class UserSeeder extends Seeder
             $user->assignRole('customer');
         });
 
-           $admin = User::firstOrCreate(
+           $admin = Employee::firstOrCreate(
             ['email' => 'admin@gmail.com'],
             [
                 'name' => 'Admin',
@@ -31,7 +32,7 @@ class UserSeeder extends Seeder
 
         $admin->assignRole('admin');
 
-        $employee = User::firstOrCreate(
+        $employee = Employee::firstOrCreate(
             ['email' => 'employee@gmail.com'], 
             [
                 'name' => 'Employee',

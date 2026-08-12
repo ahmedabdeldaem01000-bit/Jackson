@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sub_services', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('duration');
+            $table->integer('duration');
             $table->string('price');
             $table->foreignId('service_id')->constrained()->cascadeOnDelete();
             $table->timestamps();

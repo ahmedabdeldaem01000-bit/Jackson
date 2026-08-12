@@ -16,8 +16,8 @@ class Service extends Model
         return $this->hasMany(Booking::class);
     }
 
-    public function subServices(): HasMany
-    {
-        return $this->hasMany(SubService::class);
-    }
+public function subServices()
+{
+    return $this->hasMany(SubService::class);
+}
 }

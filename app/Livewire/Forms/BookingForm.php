@@ -3,15 +3,12 @@
 namespace App\Livewire\Forms;
 
 use App\Models\Booking;
-
 use App\Services\BookingService;
-use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
 class BookingForm extends Form
 {
-
     public ?Booking $booking = null;
 
     #[Validate('required|exists:users,id')]
@@ -31,13 +28,12 @@ class BookingForm extends Form
 
     public $exists = false;
 
-
-
-
-    public function setBooking(
-        Booking $booking
-    ): void {
-
+    /**
+     * تحميل بيانات الحجز للتعديل
+     */
+    public ?string $conflictMessage = null;
+    public function setBooking(Booking $booking): void
+    {
         $this->booking = $booking;
 
         $this->user_id = $booking->user_id;
@@ -47,38 +43,88 @@ class BookingForm extends Form
         $this->time = $booking->time;
     }
 
+    /**
+     * إنشاء حجز جديد
+     */
+public function store()
+{
+    $this->date = now()->toDateString();
 
+    $this->validate();
 
-    public function store()
+    $service = app(BookingService::class);
+
+    $this->conflictMessage = $service->hasConflict(
+        (int) $this->employee_id,
+        $this->date,
+        $this->time,
+        (int) $this->user_id,
+    );
+
+    try {
+
+        $booking = $service->create([
+            'user_id' => (int) $this->user_id,
+            'employee_id' => (int) $this->employee_id,
+            'sub_service_id' => (int) $this->service_id,
+            'date' => $this->date,
+            'time' => $this->time,
+        ]);
+
+        session()->flash(
+            'success',
+            'تم إنشاء الحجز بنجاح.'
+        );
+
+        return $booking;
+
+    } catch (\Throwable $e) {
+
+        report($e);
+
+        $this->addError(
+            'time',
+            $e->getMessage()
+        );
+
+        return null;
+    }
+}
+    /**
+     * تعديل الحجز
+     */
+    public function update()
     {
-        $this->date = now()->toDateString();
-
         $this->validate();
 
         $service = app(BookingService::class);
 
-        $error = $service->hasConflict(
-            $this->employee_id,
+        /*
+         * التحقق من التعارض فقط
+         */
+        $conflictMessage = $service->hasConflict(
+            (int) $this->employee_id,
             $this->date,
             $this->time,
-            $this->user_id,
+            (int) $this->user_id,
+            $this->booking->id
         );
 
-        if ($error) {
-
-            $this->addError('time', $error);
-
-            return;
-        }
         try {
 
-            $service->create([
-                'user_id' => $this->user_id,
-                'employee_id' => $this->employee_id,
-                'service_id' => $this->service_id,
-                'date' => $this->date,
-                'time' => $this->time,
-            ]);
+            /*
+             * تعديل الحجز مهما كان هناك تعارض
+             */
+            $service->update(
+                $this->booking,
+                [
+                    'user_id' => $this->user_id,
+                    'employee_id' => $this->employee_id,
+                    'sub_service_id' => $this->service_id,
+                    'date' => $this->date,
+                    'time' => $this->time,
+                ]
+            );
 
         } catch (\Exception $e) {
 
@@ -87,40 +133,28 @@ class BookingForm extends Form
             return;
         }
 
-        $this->reset();
-    }
-
-    public function update()
-    {
-        $this->validate();
-
-        $service = app(BookingService::class);
-
-        $error = $service->hasConflict(
-            $this->employee_id,
-            $this->date,
-            $this->time,
-            $this->user_id,
-            $this->booking->id
+        /*
+         * رسالة النجاح
+         */
+        session()->flash(
+            'success',
+            'تم تعديل الحجز بنجاح.'
         );
 
-        if ($error) {
-
-            $this->addError('time', $error);
-
-            return;
+        /*
+         * رسالة التحذير
+         */
+        if ($conflictMessage) {
+            session()->flash(
+                'warning',
+                $conflictMessage
+            );
         }
-        $service->update(
-            $this->booking,
-            [
-                'user_id' => $this->user_id,
-                'employee_id' => $this->employee_id,
-                'service_id' => $this->service_id,
-                'date' => $this->date,
-                'time' => $this->time,
-            ]
-        );
+
+        /*
+         * تنظيف الفورم
+         */
         $this->reset();
     }
-
 }
+ 

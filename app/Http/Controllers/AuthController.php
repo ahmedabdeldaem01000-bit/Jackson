@@ -37,48 +37,36 @@ class AuthController extends Controller
             ->with('success', 'Account created successfully.');
     }
 
-    public function login(LoginRequest $request)
-    {
-        if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-            return back()
-                ->withErrors([
-                    'email' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
-                ])
-                ->onlyInput('email');
-        }
 
-        $request->session()->regenerate();
+public function login(Request $request)
+{
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
 
-        $user = Auth::user();
-
-
-        if ($user->hasRole('admin')) {
-            return redirect()->route('admin.dashboard');
-        }
-        if ($user->hasRole('barber')) {
-            return redirect()->route('admin.barber');
-        }
-        if ($user->hasRole('customer')) {
-            return redirect()->route('home');
-        }
-
-        Auth::logout();
-
-        return redirect()->route('login')
+    if (!Auth::guard('customer')->attempt($credentials, $request->boolean('remember'))) {
+        return back()
             ->withErrors([
-                'email' => 'لا يوجد دور مخصص لهذا الحساب.',
-            ]);
+                'email' => 'بيانات تسجيل الدخول غير صحيحة.',
+            ])
+            ->withInput();
     }
 
-    public function logout(): RedirectResponse
-    {
-        Auth::logout();
+    $request->session()->regenerate();
 
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
+    return redirect()->intended(route('home'));
+}
 
-        return redirect()->route('login');
-    }
+public function logout(Request $request)
+{
+    Auth::guard('customer')->logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('home');
+}
 
 
 

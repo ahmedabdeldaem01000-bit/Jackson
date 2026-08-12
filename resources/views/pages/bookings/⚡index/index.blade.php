@@ -135,6 +135,9 @@
                                 <th scope="col" class="px-3 py-3.5   text-sm font-semibold text-gray-900">
                                     وقت الحجز
                                 </th>
+                                <th scope="col" class="px-3 py-3.5   text-sm font-semibold text-gray-900">
+                                 الدور
+                                </th>
 
                        
 
@@ -172,7 +175,13 @@
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                         {{ $booking->time }}
                                     </td>
-  
+  <td class="turn">
+    @if ($booking->turn === 0)
+        <span class="text-success fw-bold">✓</span>
+    @else
+        <span>{{ $booking->turn }}</span>
+    @endif
+</td>
 
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                                         <span

@@ -13,35 +13,54 @@
                 alt="Logo">
 
         </a>
+<ul
+    id="list"
+    class="hidden lg:flex items-center gap-8 text-sm font-semibold tracking-[2px]
+           {{ request()->routeIs('login', 'register') ? 'text-black' : 'text-white' }}
+           transition-all duration-300"
+>
 
-        <ul
-            id="list"
-             {{ request()->routeIs('login', 'signup') ? 'text-black' : 'text-white' }}
-            class="hidden lg:flex items-center gap-8 text-sm font-semibold tracking-[2px] text-white transition-all duration-300">
+    <li><a href="{{ route('home') }}">الرئيسية</a></li>
+    <li><a href="#about">من نحن</a></li>
+    <li><a href="#services">خدماتنا</a></li>
+    <li><a href="#booking">الحجز</a></li>
+    <li><a href="#prices">الأسعار</a></li>
+    <li><a href="#locations">الفروع</a></li>
+    <li><a href="#contact">تواصل معنا</a></li>
 
-            <li><a href="{{ route('home') }}">الرئيسية</a></li>
-            <li><a href="#about">من نحن</a></li>
-            <li><a href="#services">خدماتنا</a></li>
-            <li><a href="#booking">الحجز</a></li>
-            <li><a href="#prices">الأسعار</a></li>
-            <li><a href="#locations">الفروع</a></li>
-            <li><a href="#contact">تواصل معنا</a></li>
-@auth
-    <li>
-        <form action="{{ route('logout') }}" method="POST">
-            @csrf
-            <button type="submit">تسجيل الخروج</button>
-        </form>
-    </li>
-@endauth
+    @auth('employee')
 
-@guest
-    <li>
-        <a href="{{ route('login') }}">تسجيل الدخول</a>
-    </li>
-@endguest
-            
-        </ul>
+        <li>
+            <form action="{{ route('employee.logout') }}" method="POST">
+                @csrf
+                <button type="submit">
+                    تسجيل الخروج
+                </button>
+            </form>
+        </li>
+
+    @elseif(auth()->check())
+
+        <li>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit">
+                    تسجيل الخروج
+                </button>
+            </form>
+        </li>
+
+    @else
+
+        <li>
+            <a href="{{ route('login') }}">
+                تسجيل الدخول
+            </a>
+        </li>
+
+    @endauth
+
+</ul>
 
         <div class="flex items-center gap-5">
 

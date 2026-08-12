@@ -11,8 +11,15 @@ class SubService extends Model
     /** @use HasFactory<\Database\Factories\SubServiceFactory> */
     use HasFactory;
     protected $fillable=['name','duration','service_id','price'];
+    protected $casts = [
+    'duration' => 'integer',
+];
         public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+        public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class);
     }
 }
