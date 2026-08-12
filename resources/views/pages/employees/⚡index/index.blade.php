@@ -12,7 +12,7 @@
        
   
 
-            <a href="{{ route('employees.create') }}"
+            <a href="{{ route('admin.employees.create') }}"
                 class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
                 Add Employee
             </a>
@@ -175,7 +175,7 @@
 
                                     <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                         <div class="flex justify-end gap-2">
-                                            <a href="{{ route('employees.edit', $employee) }}"
+                                            <a href="{{ route('admin.employees.edit', $employee) }}"
                                                 class="text-indigo-600 hover:text-indigo-900">
                                                 Edit
                                             </a>

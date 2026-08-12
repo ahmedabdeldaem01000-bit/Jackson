@@ -12,7 +12,7 @@ new #[Title('Create Employee')] class extends Component {
     public function save(){
         $this->form->store();
         session()->flash('message', 'تم اضافه الموظف بنجاح');
-        return $this->redirect('/employees');
+        return $this->redirect(route('admin.employees.index'));
     }
 };
 
@@ -148,7 +148,7 @@ new #[Title('Create Employee')] class extends Component {
                 {{-- Actions --}}
                 <div class="flex justify-end gap-3">
                     <a 
-                        href="{{ route('employees.index') }}"
+                        href="{{ route('admin.employees.index') }}"
                         class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                         الغاء

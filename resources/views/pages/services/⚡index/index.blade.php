@@ -14,7 +14,7 @@
         </div>
 
         <a
-            href="{{ route('services.create') }}"
+            href="{{ route('admin.services.create') }}"
             wire:navigate
             class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
@@ -209,7 +209,7 @@
                         <div class="flex justify-center">
 
                             <a
-                                href="{{ route('services.edit',$service) }}"
+                                href="{{ route('admin.services.edit',$service) }}"
                                 wire:navigate
                                 class="px-3 py-1 bg-blue-500 text-black rounded"
                             >

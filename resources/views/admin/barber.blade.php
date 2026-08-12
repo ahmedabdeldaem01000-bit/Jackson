@@ -1,4 +1,1 @@
-@extends('layouts.app')
-@section('content')
-Babaer
-@endsection
+<h1>barber</h1>

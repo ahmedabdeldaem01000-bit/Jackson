@@ -12,27 +12,27 @@ new #[Title('Create Bookings')] class extends Component {
     public BookingForm $form;
 
     public string $searchUser = '';
+public bool $userSelected = false;
+public bool $EmployeeSelected = false;
+public bool $serviceSelected = false;
+    public array $users = [];
     public string $searchService = '';
+
+    public array $service = [];
     public string $searchEmployee = '';
 
-    public bool $userSelected = false;
-    public bool $serviceSelected = false;
-    public bool $EmployeeSelected = false;
-
-    public array $users = [];
-    public array $service = [];
     public array $employees = [];
+
+
     public array $bookedTimes = [];
 
     public bool $timeAvailable = false;
 
-    public ?string $conflictMessage = null;
 
 
     public function updatedSearchUser()
     {
-        $this->userSelected = false;
-
+         $this->userSelected = false;
         if (strlen($this->searchUser) < 2) {
             $this->users = [];
             return;
@@ -47,25 +47,28 @@ new #[Title('Create Bookings')] class extends Component {
 
     public function selectUser($id)
     {
-        $user = User::findOrFail($id);
 
+        $user = User::findOrFail($id);
+        
         $this->userSelected = true;
         $this->form->user_id = $user->id;
         $this->searchUser = $user->name;
         $this->users = [];
 
-        $this->checkTimeConflict();
+        if ($this->form->time) {
+            $this->updatedFormTime();
+        }
     }
-
-
+ 
     // -------------------------------------------------------------
 // -------------------------------------------------------------
 
 
+
+
     public function updatedSearchService()
     {
-        $this->serviceSelected = false;
-
+   $this->serviceSelected = false;
         if (strlen($this->searchService) < 2) {
             $this->service = [];
             return;
@@ -81,13 +84,13 @@ new #[Title('Create Bookings')] class extends Component {
     public function selectService($id)
     {
         $service = SubService::findOrFail($id);
-
-        $this->serviceSelected = true;
+$this->serviceSelected=true;
         $this->form->service_id = $service->id;
+
         $this->searchService = $service->name;
+
         $this->service = [];
     }
-
     // -------------------------------------------------------------
 // -------------------------------------------------------------
 
@@ -96,8 +99,7 @@ new #[Title('Create Bookings')] class extends Component {
 
     public function updatedSearchEmployee()
     {
-        $this->EmployeeSelected = false;
-
+           $this->EmployeeSelected = false;
         if (strlen($this->searchEmployee) < 2) {
             $this->employees = [];
             return;
@@ -110,27 +112,8 @@ new #[Title('Create Bookings')] class extends Component {
             ->toArray();
     }
 
-    public function selectEmployee($id)
-    {
-        $employee = Employee::findOrFail($id);
-
-        $this->EmployeeSelected = true;
-        $this->form->employee_id = $employee->id;
-        $this->searchEmployee = $employee->name;
-        $this->employees = [];
-
-        $this->loadBookedTimes();
-        $this->checkTimeConflict();
-    }
-
-
     public function loadBookedTimes()
     {
-        if (!$this->form->employee_id) {
-            $this->bookedTimes = [];
-            return;
-        }
-
         $this->bookedTimes = Booking::query()
             ->where('employee_id', $this->form->employee_id)
             ->whereDate('date', today())
@@ -138,31 +121,53 @@ new #[Title('Create Bookings')] class extends Component {
             ->orderBy('time')
             ->get()
             ->map(function ($booking) {
+
                 return [
                     'time' => $booking->time,
-                    'formatted' => Carbon::parse($booking->time)->format('h:i A'),
+                    'formatted' => Carbon::parse($booking->time)
+                        ->format('h:i A'),
                 ];
+
             })
             ->toArray();
     }
-
-    public function updated($property)
+    public function selectEmployee($id)
     {
-        if (
-            in_array($property, [
-                'form.time',
-                'form.employee_id',
-                'form.user_id',
-            ])
-        ) {
-            $this->checkTimeConflict();
+        $employee = Employee::findOrFail($id);
+$this->EmployeeSelected = true;
+        $this->form->employee_id = $employee->id;
+        $this->searchEmployee = $employee->name;
+        $this->employees = [];
+
+        $this->loadBookedTimes();
+
+        if ($this->form->time) {
+            $this->updatedFormTime();
         }
     }
 
-    protected function checkTimeConflict(): void
+    public function updatedFormEmployeeId()
     {
-        $this->conflictMessage = null;
+        if ($this->form->time) {
+            $this->updatedFormTime();
+        }
+    }
 
+    public function updatedFormUserId()
+    {
+        if ($this->form->time) {
+            $this->updatedFormTime();
+        }
+    }
+    public function updated($property)
+    {
+        if ($property === 'form.time') {
+            $this->validateTime();
+        }
+    }
+
+    protected function validateTime()
+    {
         if (
             empty($this->form->employee_id) ||
             empty($this->form->user_id) ||
@@ -174,27 +179,57 @@ new #[Title('Create Bookings')] class extends Component {
 
         $service = app(BookingService::class);
 
-        $this->conflictMessage = $service->hasConflict(
-            (int) $this->form->employee_id,
+        $this->resetErrorBag('form.time');
+
+        $error = $service->hasConflict(
+            $this->form->employee_id,
             now()->toDateString(),
             $this->form->time,
-            (int) $this->form->user_id
+            $this->form->user_id
         );
 
-        // التعارض تحذير فقط ولا يمنع الحجز
-        $this->timeAvailable = true;
+        if ($error) {
+            $this->addError('form.time', $error);
+            $this->timeAvailable = false;
+        } else {
+            $this->timeAvailable = true;
+        }
     }
+    public function updatedFormTime()
+    {
+        if (
+            empty($this->form->employee_id) ||
+            empty($this->form->user_id) ||
+            empty($this->form->time)
+        ) {
+            $this->timeAvailable = false;
+            return;
+        }
 
+        $service = app(BookingService::class);
 
+        $this->resetErrorBag('form.time');
 
+        $error = $service->hasConflict(
+            $this->form->employee_id,
+            now()->toDateString(),
+            $this->form->time,
+            $this->form->user_id,
+        );
 
-
+        if ($error) {
+            $this->addError('form.time', $error);
+            $this->timeAvailable = false;
+        } else {
+            $this->timeAvailable = true;
+        }
+    }
     public function save()
     {
         $this->form->date = now()->toDateString();
         $this->form->store();
         session()->flash('message', 'تم اضافه الحجز بنجاح');
-        return $this->redirect('/bookings');
+        return $this->redirect(route('admin.bookings.index'));
     }
 };
 
@@ -202,7 +237,7 @@ new #[Title('Create Bookings')] class extends Component {
 ?>
 
 
-<div class="max-w-[100%] mx-auto  py-8">
+<div class="max-w-7xl mx-auto px-6 py-8">
 
     {{-- Header --}}
     <div class="mb-8">
@@ -281,9 +316,9 @@ new #[Title('Create Bookings')] class extends Component {
 
             </div>
 
-            <div class="p-6 flex justify-center">
+            <div class="p-6 justify-center">
 
-                <div class="space-y-2   justify-center">
+                <div class="space-y-2 w-[50%] justify-center">
 
                     {{-- Personal Information --}}
 
@@ -301,27 +336,34 @@ new #[Title('Create Bookings')] class extends Component {
                                 </label>
 
                                 <input type="text" wire:model.live.debounce.300ms="searchUser"
-                                    placeholder="ابحث عن العميل..." autocomplete="off"
-                                    class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                    placeholder="ابحث عن العميل..." autocomplete="off" class="w-full rounded-xl border border-gray-300 bg-gray-50
+px-4 py-3 shadow-sm transition
+focus:border-indigo-500
+focus:bg-white
+focus:ring-2
+focus:ring-indigo-500">
 
                                 <input type="hidden" wire:model="form.user_id">
 
                                 @if($searchUser && count($users))
-                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
-                                                rounded-xl border border-gray-200 bg-white shadow-xl">
+                                                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
+                                    rounded-xl border border-gray-200 bg-white shadow-xl">
 
-                                        @foreach($users as $user)
+                                                                        @foreach($users as $user)
 
-                                            <button type="button" wire:key="user-{{ $user['id'] }}"
-                                                wire:click="selectUser({{ $user['id'] }})"
-                                                class="flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-indigo-50">
-                                                {{ $user['name'] }}
-                                            </button>
+                                                                            <button type="button" wire:key="user-{{ $user['id'] }}"
+                                                                                wire:click="selectUser({{ $user['id'] }})"
+                                                                              class="flex w-full items-center justify-between
+px-4 py-3 text-right
+transition
+hover:bg-indigo-50">
+                                                                                {{ $user['name'] }}
+                                                                            </button>
 
-                                        @endforeach
+                                                                        @endforeach
 
-                                    </div>
-                                @elseif($searchUser && !$userSelected)
+                                                                    </div>
+                              @elseif($searchUser && !$userSelected)
                                     <div class="mt-1 bg-black border rounded-lg shadow-lg">
                                         <p class="px-4 py-2 text-right text-gray-500">لا يوجد نتائج</p>
                                     </div>
@@ -332,17 +374,18 @@ new #[Title('Create Bookings')] class extends Component {
 
 
                             @error('form.user_id')
-                                <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
+                            <p
+class="mt-2 flex items-center gap-2 text-sm text-red-600">
 
-                                    <span>⚠</span>
+<span>⚠</span>
 
-                                    <span>
+<span>
 
-                                        {{ $message }}
+{{ $message }}
 
-                                    </span>
+</span>
 
-                                </p>
+</p>
                             @enderror
 
                             <!-- ++++++++++++++++++++++++++++++++++++++ -->
@@ -356,26 +399,33 @@ new #[Title('Create Bookings')] class extends Component {
                                 </label>
 
                                 <input type="text" wire:model.live.debounce.300ms="searchService"
-                                    placeholder="ابحث عن خدمه..." autocomplete="off"
-                                    class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                    placeholder="ابحث عن خدمه..." autocomplete="off" class="w-full rounded-xl border border-gray-300 bg-gray-50
+px-4 py-3 shadow-sm transition
+focus:border-indigo-500
+focus:bg-white
+focus:ring-2
+focus:ring-indigo-500">
 
                                 <input type="hidden" wire:model="form.service_id">
 
                                 @if($searchService && count($service))
-                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
-                                                rounded-xl border border-gray-200 bg-white shadow-xl">
+                                                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
+                                    rounded-xl border border-gray-200 bg-white shadow-xl">
 
-                                        @foreach($service as $serv)
+                                                                        @foreach($service as $serv)
 
-                                            <button type="button" wire:key="service-{{ $serv['id'] }}"
-                                                wire:click="selectService({{ $serv['id'] }})"
-                                                class="flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-indigo-50">
-                                                {{ $serv['name'] }}
-                                            </button>
+                                                                            <button type="button" wire:key="service-{{ $serv['id'] }}"
+                                                                                wire:click="selectService({{ $serv['id'] }})"
+                                                                                class="flex w-full items-center justify-between
+px-4 py-3 text-right
+transition
+hover:bg-indigo-50">
+                                                                                {{ $serv['name'] }}
+                                                                            </button>
 
-                                        @endforeach
+                                                                        @endforeach
 
-                                    </div>
+                                                                    </div>
                                 @elseif($searchService && !$serviceSelected)
                                     <div class="mt-1 bg-black border rounded-lg shadow-lg">
                                         <p class="px-4 py-2 text-right text-gray-500">لا يوجد نتائج</p>
@@ -387,17 +437,18 @@ new #[Title('Create Bookings')] class extends Component {
 
 
                             @error('form.service_id')
-                                <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
+                            <p
+class="mt-2 flex items-center gap-2 text-sm text-red-600">
 
-                                    <span>⚠</span>
+<span>⚠</span>
 
-                                    <span>
+<span>
 
-                                        {{ $message }}
+{{ $message }}
 
-                                    </span>
+</span>
 
-                                </p>
+</p>
                             @enderror
 
                             <!-- ++++++++++++++++++++++++++++++++++++++ -->
@@ -411,42 +462,49 @@ new #[Title('Create Bookings')] class extends Component {
                                 </label>
 
                                 <input type="text" wire:model.live.debounce.300ms="searchEmployee"
-                                    placeholder="ابحث عن الموظف..." autocomplete="off"
-                                    class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                    placeholder="ابحث عن الموظف..." autocomplete="off" class="w-full rounded-xl border border-gray-300 bg-gray-50
+px-4 py-3 shadow-sm transition
+focus:border-indigo-500
+focus:bg-white
+focus:ring-2
+focus:ring-indigo-500">
 
                                 <input type="hidden" wire:model="form.employee_id">
 
                                 @if($searchEmployee && count($employees))
-                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
-                                                rounded-xl border border-gray-200 bg-white shadow-xl">
+                                                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
+                                    rounded-xl border border-gray-200 bg-white shadow-xl">
 
-                                        @foreach($employees as $employee)
+                                                                        @foreach($employees as $employee)
 
-                                            <button type="button" wire:key="employee-{{ $employee['id'] }}"
-                                                wire:click="selectEmployee({{ $employee['id'] }})"
-                                                class="flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-indigo-50">
-                                                {{ $employee['name'] }}
-                                            </button>
+                                                                            <button type="button" wire:key="employee-{{ $employee['id'] }}"
+                                                                                wire:click="selectEmployee({{ $employee['id'] }})"
+                                                                              class="flex w-full items-center justify-between
+                                                                                    px-4 py-3 text-right
+                                                                                    transition
+                                                                                    hover:bg-indigo-50">
+                                                                                {{ $employee['name'] }}
+                                                                            </button>
 
-                                        @endforeach
+                                                                        @endforeach
 
-                                    </div>
-                                @elseif($searchEmployee && !$EmployeeSelected)
-                                    <div class="px-6 py-5 text-center text-gray-400">
+                                                                    </div>
+                                @elseif($searchEmployee && ! $EmployeeSelected)
+                             <div class="px-6 py-5 text-center text-gray-400">
 
-                                        <div class="text-2xl">
+<div class="text-2xl">
 
-                                            🔍
+🔍
 
-                                        </div>
+</div>
 
-                                        <div class="mt-2">
+<div class="mt-2">
 
-                                            لا توجد نتائج
+لا توجد نتائج
 
-                                        </div>
+</div>
 
-                                    </div>
+</div>
                                 @endif
 
                             </div>
@@ -454,121 +512,150 @@ new #[Title('Create Bookings')] class extends Component {
 
 
                             @error('form.employee_id')
-                                <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
+                           <p
+class="mt-2 flex items-center gap-2 text-sm text-red-600">
 
-                                    <span>⚠</span>
+<span>⚠</span>
 
-                                    <span> {{ $message }} </span>
+<span>
 
-                                </p>
+{{ $message }}
+
+</span>
+
+</p>
                             @enderror
 
                         </div>
+                                        </div>
+
+            </div>
+
+        </div>
+                        <div class="mt-6">
+ 
+
+
+
+
+
+
+
+
+
+
+                            <input type="time" wire:model.live="form.time" class="w-full rounded-xl border border-gray-300 bg-gray-50
+px-4 py-3 shadow-sm transition
+focus:border-indigo-500
+focus:bg-white
+focus:ring-2
+focus:ring-indigo-500">
+
+                            @error('form.time')
+
+                               <p
+class="mt-2 flex items-center gap-2 text-sm text-red-600">
+
+<span>⚠</span>
+
+<span>
+
+{{ $message }}
+
+</span>
+
+</p>
+
+                            @enderror
+
+                            @if($form->time)
+
+                                @if($timeAvailable)
+
+                                    <div class="mt-2 text-green-600">
+
+                                        ✔ الموعد متاح
+
+                                    </div>
+
+                                @else
+
+                                    <div class="mt-2 text-red-600">
+
+                                        ✖ يوجد حجز لهذا الموظف خلال 20 دقيقة.
+
+                                    </div>
+
+                                @endif
+
+                            @endif
+
+                        </div>
+
+                        <div class="mt-8">
+
+                            <h3 class="font-semibold text-gray-700 mb-3">
+
+                                المواعيد المحجوزة اليوم
+
+                            </h3>
+
+                            @if(count($bookedTimes))
+
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                                    @foreach($bookedTimes as $booking)
+
+                                        <div class="rounded-lg border border-red-300 bg-red-50 p-3 text-center">
+
+                                            <div class="text-red-700 font-semibold">
+
+                                                {{ $booking['formatted'] }}
+
+                                            </div>
+
+                                            <div class="text-xs text-red-500 mt-1">
+
+                                                محجوز
+
+                                            </div>
+
+                                        </div>
+
+                                    @endforeach
+
+                                </div>
+
+                            @else
+
+                                <div class="rounded-lg border bg-green-50 p-4 text-green-700">
+
+                                    لا توجد حجوزات لهذا الموظف اليوم.
+
+                                </div>
+
+                            @endif
+
+                        </div>
+
                     </div>
 
+
+
+                    {{-- Actions --}}
+                    <div class="flex justify-end gap-3">
+                        <a href="{{ route('admin.bookings.index') }}"
+                            class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            الغاء
+                        </a>
+                        <button type="submit" wire:loading.attr="disabled" @disabled(!$timeAvailable) class="px-4 py-2 bg-blue-600 text-white rounded-lg
+           disabled:bg-gray-400
+           disabled:cursor-not-allowed
+           disabled:opacity-50">
+                            إنشاء الحجز
+                        </button>
+                    </div>
                 </div>
-
-            </div>
-            <div class="mt-6 flex justify-center">
-
-                <input type="time" wire:model.live="form.time"
-                    class="w-[50%] rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500">
-
-                @error('form.time')
-                    <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
-                        <span>⚠</span>
-                        <span>{{ $message }}</span>
-                    </p>
-                @enderror
-
-                @if($conflictMessage)
-                    <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
-                        <span>✕</span>
-                        <span>{{ $conflictMessage }}</span>
-                    </p>
-                @endif
-
-                @if($form->time)
-
-                    @if($conflictMessage)
-
-                        <div class="mt-2 text-red-600">
-                            ✕ {{ $conflictMessage }}
-                        </div>
-
-                    @else
-
-                        <div class="mt-2 text-green-600">
-                            ✔ الموعد متاح
-                        </div>
-
-                    @endif
-
-                @endif
-            </div>
-
-            <div class="mt-8">
-
-                <h3 class="font-semibold text-gray-700 mb-3">
-
-                    المواعيد المحجوزة اليوم
-
-                </h3>
-
-                @if(count($bookedTimes))
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-                        @foreach($bookedTimes as $booking)
-
-                            <div class="rounded-lg border border-red-300 bg-red-50 p-3 text-center">
-
-                                <div class="text-red-700 font-semibold">
-
-                                    {{ $booking['formatted'] }}
-
-                                </div>
-
-                                <div class="text-xs text-red-500 mt-1">
-
-                                    محجوز
-
-                                </div>
-
-                            </div>
-
-                        @endforeach
-
-                    </div>
-
-                @else
-
-                    <div class="rounded-lg border bg-green-50 p-4 text-green-700">
-
-                        لا توجد حجوزات لهذا الموظف اليوم.
-
-                    </div>
-
-                @endif
-
-            </div>
-
-        </div>
-
-
-
-        {{-- Actions --}}
-        <div class="flex justify-end gap-3">
-            <a href="{{ route('bookings.index') }}"
-                class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                الغاء
-            </a>
-            <button type="submit" wire:loading.attr="disabled" @disabled(!$timeAvailable)
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50">
-                إنشاء الحجز
-            </button>
-        </div>
-</div>
-</form>
+    </form>
 </div>
 </div>

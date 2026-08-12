@@ -146,7 +146,7 @@ SubService::where('service_id', $this->service->id)
             'تم تعديل الخدمة بنجاح'
         );
 
-        return redirect()->route('services.index');
+        return redirect()->route('admin.services.index');
     }
 
 };

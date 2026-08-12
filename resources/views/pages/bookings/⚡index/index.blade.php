@@ -12,7 +12,7 @@
        
   
 
-            <a href="{{ route('bookings.create') }}"
+            <a href="{{ route('admin.bookings.create') }}"
                 class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
                 اضافة حجز جديد
             </a>
@@ -135,9 +135,6 @@
                                 <th scope="col" class="px-3 py-3.5   text-sm font-semibold text-gray-900">
                                     وقت الحجز
                                 </th>
-                                <th scope="col" class="px-3 py-3.5   text-sm font-semibold text-gray-900">
-                                 الدور
-                                </th>
 
                        
 
@@ -175,13 +172,7 @@
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                         {{ $booking->time }}
                                     </td>
-  <td class="turn">
-    @if ($booking->turn === 0)
-        <span class="text-success fw-bold">✓</span>
-    @else
-        <span>{{ $booking->turn }}</span>
-    @endif
-</td>
+  
 
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                                         <span

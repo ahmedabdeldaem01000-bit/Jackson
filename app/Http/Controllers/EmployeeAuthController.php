@@ -2,54 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\LoginRequest;
 
 class EmployeeAuthController extends Controller
 {
-    public function login(Request $request)
+    public function showLoginForm()
     {
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required'],
-        ]);
+        // Reuse the existing login view for now. If there's a dedicated admin login view, update this.
+        return view('web.auth.login');
+    }
 
-        if (! Auth::guard('employee')->attempt(
-            $credentials,
-            $request->boolean('remember')
-        )) {
-
+    public function login(LoginRequest $request)
+    {
+        if (!Auth::guard('employee')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             return back()->withErrors([
-                'email' => 'Email or Password incorrect.',
-            ]);
+                'email' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+            ])->onlyInput('email');
         }
 
         $request->session()->regenerate();
 
-        $employee = Auth::guard('employee')->user();
+        $user = Auth::guard('employee')->user();
 
-        if ($employee->hasRole('admin')) {
-            return redirect()->route('admin.dashboard');
+        if ($user->hasRole('admin')) {
+            return redirect()->intended(route('admin.dashboard'));
         }
 
-        if ($employee->hasRole('barber')) {
-            return redirect()->route('admin.barber');
+        // employee or barber go to employee dashboard
+        if ($user->hasRole('employee') || $user->hasRole('barber')) {
+            return redirect()->intended(route('employee.dashboard'));
         }
 
         Auth::guard('employee')->logout();
 
-        return back()->withErrors([
-            'email' => 'You don\'t have permission.',
+        return redirect()->route('employee.login')->withErrors([
+            'email' => 'لا يوجد دور مخصص لهذا الحساب.',
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout(): RedirectResponse
     {
         Auth::guard('employee')->logout();
 
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
 
         return redirect()->route('employee.login');
     }

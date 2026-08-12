@@ -15,8 +15,8 @@ new #[Title('Edit Booking')] class extends Component {
     public function save()
     {
         $this->form->update();
-        session()->flash('message', 'نم تعديل الحجز بنحاح.');
-        $this->redirect('/bookings');
+        session()->flash('message', 'تم تعديل الحجز بنجاح.');
+        $this->redirect(route('admin.bookings.index'));
     }
 
 };
@@ -145,7 +145,7 @@ new #[Title('Edit Booking')] class extends Component {
                 {{-- Actions --}}
                 <div class="flex justify-end gap-3">
                     <a 
-                        href="{{ route('employees.index') }}"
+                        href="{{ route('admin.employees.index') }}"
                         class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                         الغاء

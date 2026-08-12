@@ -171,7 +171,7 @@
     <div class="flex justify-end gap-3">
 
         <a
-            href="{{ route('services.index') }}"
+            href="{{ route('admin.services.index') }}"
             wire:navigate
             class="rounded-lg border px-6 py-2"
         >

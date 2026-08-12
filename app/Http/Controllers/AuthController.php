@@ -12,13 +12,17 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-
-    //=======================Start Login Form====================================   
+    // Customer login form
     public function showLoginForm()
     {
         return view('web.auth.login');
     }
 
+    // Customer register form
+    public function showRegisterForm()
+    {
+        return view('web.auth.signup');
+    }
 
     public function register(RegisterRequest $request): RedirectResponse
     {
@@ -29,59 +33,40 @@ class AuthController extends Controller
         ]);
 
         $user->assignRole('customer');
-        Auth::login($user);
+
+        // Log in using the customer guard
+        Auth::guard('customer')->login($user);
 
         $request->session()->regenerate();
 
-        return redirect()->route('home')
+        return redirect()->intended(route('home'))
             ->with('success', 'Account created successfully.');
     }
 
-
-public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email' => ['required', 'email'],
-        'password' => ['required'],
-    ]);
-
-    if (!Auth::guard('customer')->attempt($credentials, $request->boolean('remember'))) {
-        return back()
-            ->withErrors([
-                'email' => 'بيانات تسجيل الدخول غير صحيحة.',
-            ])
-            ->withInput();
-    }
-
-    $request->session()->regenerate();
-
-    return redirect()->intended(route('home'));
-}
-
-public function logout(Request $request)
-{
-    Auth::guard('customer')->logout();
-
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-
-    return redirect()->route('home');
-}
-
-
-
-
-    //=======================End Login Form====================================   
-
-
-
-
-    //=======================Start Register Form====================================   
-
-    public function showRegisterForm()
+    public function login(LoginRequest $request)
     {
-        return view('web.auth.signup');
-    }
-    //=======================End Register Form====================================   
+        // Authenticate explicitly using the customer guard
+        if (!Auth::guard('customer')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+            return back()
+                ->withErrors([
+                    'email' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+                ])
+                ->onlyInput('email');
+        }
 
+        $request->session()->regenerate();
+
+        // Redirect customers to frontend home
+        return redirect()->intended(route('home'));
+    }
+
+    public function logout(): RedirectResponse
+    {
+        Auth::guard('customer')->logout();
+
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
 }

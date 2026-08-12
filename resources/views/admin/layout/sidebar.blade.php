@@ -1,11 +1,22 @@
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
   <!-- Brand Logo -->
-  <a href="" class="brand-link">
+  <a href="index3.html" class="brand-link">
     <img src="{{ asset('dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3"
       style="opacity: .8">
     <span class="brand-text font-weight-light">Jackson Dashboard</span>
   </a>
+  <form
+    action="{{ route('employee.logout') }}"
+    method="POST"
+    class="inline"
+>
+    @csrf
+
+    <button type="submit" class="text-white">
+        تسجيل الخروج
+    </button>
+</form>
 
   <!-- Sidebar -->
   <div class="sidebar">
@@ -15,7 +26,7 @@
         <img src="{{ asset('dist/img/user2-160x160.jpg') }}" class="img-circle elevation-2" alt="User Image">
       </div>
       <div class="info">
-        <a href="{{route('admin.employees.show',auth()->user())}}" class="d-block">Jackson</a>
+        <a href="#" class="d-block">Jackson</a>
       </div>
     </div>
 
@@ -36,9 +47,6 @@
       <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
         <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
-
-
-               @role('admin','employee')
         <!-- parent -->
         <li class="nav-item menu-open">
           <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
@@ -53,7 +61,7 @@
 
 
        <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.employees.*') ? 'menu-open' : '' }}">
+        <li class="nav-item {{ request()->routeIs('admin.employees.*') ? 'menu-open' : '' }}">
         <a href="{{ route('admin.employees.index') }}"     class="nav-link {{ request()->routeIs('admin.employees.index') ? 'active' : '' }}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
             <p>
@@ -82,7 +90,7 @@
           </ul>
         </li>
        <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.users.*') ? 'menu-open' : '' }}">
+        <li class="nav-item {{ request()->routeIs('admin.users.*') ? 'menu-open' : '' }}">
         <a href="{{ route('admin.users.index') }}"     class="nav-link {{ request()->routeIs('admin.users.index') ? 'active' : '' }}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
             <p>
@@ -113,7 +121,7 @@
 
  
    <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.bookings.*') ? 'menu-open' : '' }}">
+        <li class="nav-item {{ request()->routeIs('admin.bookings.*') ? 'menu-open' : '' }}">
         <a href="{{ route('admin.bookings.index') }}"     class="nav-link {{ request()->routeIs('admin.bookings.index') ? 'active' : '' }}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
             <p>
@@ -142,7 +150,7 @@
           </ul>
         </li>
    <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.services.*') ? 'menu-open' : '' }}">
+        <li class="nav-item {{ request()->routeIs('admin.services.*') ? 'menu-open' : '' }}">
         <a href="{{ route('admin.services.index') }}"     class="nav-link {{ request()->routeIs('admin.services.index') ? 'active' : '' }}">
             <i class="nav-icon fas fa-tachometer-alt"></i>
             <p>
@@ -164,42 +172,6 @@
               <a href="{{ route('admin.services.index') }}"
                 class="nav-link {{ request()->routeIs('admin.services.index') ? 'active' : '' }}">
                 <i class="far fa-circle nav-icon"></i>
-                <p>جميع الخدمات</p>
-              </a>
-            </li>
-
-          </ul>
-        </li>
-
-@endrole
-
-
-
-@role('barber','employee')
- 
-   <!-- parent -->
-        <li class="nav-item {{ request()->routeIs('pages.bookings.*') ? 'menu-open' : '' }}">
-        <a href="{{ route('bookings.index') }}"     class="nav-link {{ request()->routeIs('bookings.index') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-tachometer-alt"></i>
-            <p>
-              الحجوزات
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <!-- child -->
-          <ul class="nav nav-treeview">
-            <!-- sup child -->
-            <li class="nav-item">
-              <a href="{{ route('bookings.create') }}"
-                class="nav-link {{ request()->routeIs('bookings.create') ? 'active' : '' }}">
-                <i class="far fa-circle nav-icon"></i>
-                <p>انشاء حجوزات جديد</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('bookings.index') }}"
-                class="nav-link {{ request()->routeIs('bookings.index') ? 'active' : '' }}">
-                <i class="far fa-circle nav-icon"></i>
                 <p>جميع الحجوزات</p>
               </a>
             </li>
@@ -207,7 +179,12 @@
           </ul>
         </li>
 
-@endrole
+
+
+
+
+
+
       </ul>
     </nav>
     <!-- /.sidebar-menu -->
