@@ -25,7 +25,6 @@ Route::get('/', HomeController::class)
 | Customer Authentication
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('guest:customer')->group(function () {
 
     Route::get('/login', [AuthController::class, 'showLoginForm'])
@@ -39,6 +38,22 @@ Route::middleware('guest:customer')->group(function () {
 
     Route::post('/register', [AuthController::class, 'register'])
         ->name('register.submit');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/verify-email', [AuthController::class, 'showVerificationForm'])
+        ->name('verification.notice');
+
+    Route::post('/verify-email', [AuthController::class, 'verifyOtp'])
+        ->name('verification.verify');
+
+    Route::post('/verify-email/resend', [AuthController::class, 'resendOtp'])
+        ->name('verification.resend');
 });
 
 
