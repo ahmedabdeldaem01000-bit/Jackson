@@ -33,7 +33,7 @@ class EmployeeAuthController extends Controller
 
         // employee or barber go to employee dashboard
         if ($user->hasRole('employee') || $user->hasRole('barber')) {
-            return redirect()->intended(route('employee.dashboard'));
+            return redirect()->intended(route('employee.bookings.index'));
         }
 
         Auth::guard('employee')->logout();

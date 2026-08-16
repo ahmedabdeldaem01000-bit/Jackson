@@ -8,6 +8,8 @@ use App\Models\Employee;
 use App\Models\Booking;
 use App\Services\BookingService;
 use Carbon\Carbon;
+use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\Auth;
 new #[Title('Create Bookings')] class extends Component {
     public BookingForm $form;
 
@@ -28,7 +30,21 @@ public bool $serviceSelected = false;
 
     public bool $timeAvailable = false;
 
+public function mount(): void
+{
+    if (Auth::guard('employee')->check()) {
+        $employee = Auth::guard('employee')->user();
 
+        if ($employee->hasAnyRole(['employee', 'barber'])) {
+            $this->form->employee_id = $employee->id;
+
+            $this->EmployeeSelected = true;
+            $this->searchEmployee = $employee->name;
+
+            $this->loadBookedTimes();
+        }
+    }
+}
 
     public function updatedSearchUser()
     {
@@ -97,20 +113,28 @@ $this->serviceSelected=true;
 
 
 
-    public function updatedSearchEmployee()
-    {
-           $this->EmployeeSelected = false;
-        if (strlen($this->searchEmployee) < 2) {
-            $this->employees = [];
-            return;
-        }
+public function updatedSearchEmployee(): void
+{
+    $employee = Auth::guard('employee')->user();
 
-        $this->employees = Employee::query()
-            ->where('name', 'like', "%{$this->searchEmployee}%")
-            ->limit(10)
-            ->get()
-            ->toArray();
+    if ($employee?->hasAnyRole(['employee', 'barber'])) {
+        return;
     }
+
+    $this->EmployeeSelected = false;
+
+    if (strlen($this->searchEmployee) < 2) {
+        $this->employees = [];
+
+        return;
+    }
+
+    $this->employees = Employee::query()
+        ->where('name', 'like', "%{$this->searchEmployee}%")
+        ->limit(10)
+        ->get()
+        ->toArray();
+}
 
     public function loadBookedTimes()
     {
@@ -131,20 +155,30 @@ $this->serviceSelected=true;
             })
             ->toArray();
     }
-    public function selectEmployee($id)
-    {
-        $employee = Employee::findOrFail($id);
-$this->EmployeeSelected = true;
-        $this->form->employee_id = $employee->id;
-        $this->searchEmployee = $employee->name;
-        $this->employees = [];
+public function selectEmployee($id): void
+{
+    $currentEmployee = Auth::guard('employee')->user();
 
-        $this->loadBookedTimes();
-
-        if ($this->form->time) {
-            $this->updatedFormTime();
-        }
+    if ($currentEmployee?->hasAnyRole(['employee', 'barber'])) {
+        return;
     }
+
+    $employee = Employee::findOrFail($id);
+
+    $this->EmployeeSelected = true;
+
+    $this->form->employee_id = $employee->id;
+
+    $this->searchEmployee = $employee->name;
+
+    $this->employees = [];
+
+    $this->loadBookedTimes();
+
+    if ($this->form->time) {
+        $this->updatedFormTime();
+    }
+}
 
     public function updatedFormEmployeeId()
     {
@@ -224,13 +258,34 @@ $this->EmployeeSelected = true;
             $this->timeAvailable = true;
         }
     }
-    public function save()
-    {
-        $this->form->date = now()->toDateString();
-        $this->form->store();
-        session()->flash('message', 'تم اضافه الحجز بنجاح');
-        return $this->redirect(route('admin.bookings.index'));
+  public function save()
+{
+    $employee = Auth::guard('employee')->user();
+
+    if (!$employee) {
+        abort(403);
     }
+
+    // الموظف أو الحلاق لا يختار موظفًا آخر
+    if ($employee->hasAnyRole(['employee', 'barber'])) {
+        $this->form->employee_id = $employee->id;
+    }
+
+    $this->form->date = now()->toDateString();
+
+    $this->form->store();
+
+    session()->flash(
+        'success',
+        'تم إضافة الحجز بنجاح'
+    );
+
+    return $this->redirect(
+        $employee->hasRole('admin')
+            ? route('admin.bookings.index')
+            : route('employee.bookings.index')
+    );
+}
 };
 
 
@@ -453,61 +508,137 @@ class="mt-2 flex items-center gap-2 text-sm text-red-600">
 
                             <!-- ++++++++++++++++++++++++++++++++++++++ -->
 
-                            <div class="relative">
+                @php
+    $currentEmployee = auth('employee')->user();
+    $isAdmin = $currentEmployee?->hasRole('admin');
+@endphp
 
-                                <label class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
+<div class="relative">
 
-                                    💈 الموظف
+    <label class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
 
-                                </label>
+        💈 الموظف
 
-                                <input type="text" wire:model.live.debounce.300ms="searchEmployee"
-                                    placeholder="ابحث عن الموظف..." autocomplete="off" class="w-full rounded-xl border border-gray-300 bg-gray-50
-px-4 py-3 shadow-sm transition
-focus:border-indigo-500
-focus:bg-white
-focus:ring-2
-focus:ring-indigo-500">
+    </label>
 
-                                <input type="hidden" wire:model="form.employee_id">
 
-                                @if($searchEmployee && count($employees))
-                                                                    <div class="absolute z-50 mt-2 w-full overflow-hidden
-                                    rounded-xl border border-gray-200 bg-white shadow-xl">
+    @if($isAdmin)
 
-                                                                        @foreach($employees as $employee)
+        {{-- Admin can select employee --}}
 
-                                                                            <button type="button" wire:key="employee-{{ $employee['id'] }}"
-                                                                                wire:click="selectEmployee({{ $employee['id'] }})"
-                                                                              class="flex w-full items-center justify-between
-                                                                                    px-4 py-3 text-right
-                                                                                    transition
-                                                                                    hover:bg-indigo-50">
-                                                                                {{ $employee['name'] }}
-                                                                            </button>
+        <input
+            type="text"
+            wire:model.live.debounce.300ms="searchEmployee"
+            placeholder="ابحث عن الموظف..."
+            autocomplete="off"
+            class="w-full rounded-xl border border-gray-300 bg-gray-50
+            px-4 py-3 shadow-sm transition
+            focus:border-indigo-500
+            focus:bg-white
+            focus:ring-2
+            focus:ring-indigo-500"
+        >
 
-                                                                        @endforeach
+        <input
+            type="hidden"
+            wire:model="form.employee_id"
+        >
 
-                                                                    </div>
-                                @elseif($searchEmployee && ! $EmployeeSelected)
-                             <div class="px-6 py-5 text-center text-gray-400">
 
-<div class="text-2xl">
+        @if($searchEmployee && count($employees))
 
-🔍
+            <div class="absolute z-50 mt-2 w-full overflow-hidden
+                rounded-xl border border-gray-200 bg-white shadow-xl">
+
+                @foreach($employees as $employee)
+
+                    <button
+                        type="button"
+                        wire:key="employee-{{ $employee['id'] }}"
+                        wire:click="selectEmployee({{ $employee['id'] }})"
+                        class="flex w-full items-center justify-between
+                        px-4 py-3 text-right transition hover:bg-indigo-50"
+                    >
+
+                        {{ $employee['name'] }}
+
+                    </button>
+
+                @endforeach
+
+            </div>
+
+        @elseif($searchEmployee && !$EmployeeSelected)
+
+            <div class="px-6 py-5 text-center text-gray-400">
+
+                <div class="text-2xl">
+                    🔍
+                </div>
+
+                <div class="mt-2">
+                    لا توجد نتائج
+                </div>
+
+            </div>
+
+        @endif
+
+    @else
+
+        {{-- Employee / Barber --}}
+        {{-- Employee is automatically selected --}}
+
+        <div
+            class="w-full rounded-xl border border-green-200
+            bg-green-50 px-4 py-3"
+        >
+
+            <div class="flex items-center justify-between">
+
+                <div>
+
+                    <div class="text-sm text-green-600">
+                        الموظف الحالي
+                    </div>
+
+                    <div class="font-semibold text-green-800">
+                        {{ $currentEmployee->name }}
+                    </div>
+
+                </div>
+
+                <div class="text-green-600">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+            </div>
+
+        </div>
+
+        <input
+            type="hidden"
+            wire:model="form.employee_id"
+        >
+
+    @endif
+
+
+    @error('form.employee_id')
+
+        <p class="mt-2 flex items-center gap-2 text-sm text-red-600">
+
+            <span>⚠</span>
+
+            <span>
+                {{ $message }}
+            </span>
+
+        </p>
+
+    @enderror
 
 </div>
-
-<div class="mt-2">
-
-لا توجد نتائج
-
-</div>
-
-</div>
-                                @endif
-
-                            </div>
 
 
 
@@ -532,6 +663,8 @@ class="mt-2 flex items-center gap-2 text-sm text-red-600">
             </div>
 
         </div>
+
+
                         <div class="mt-6">
  
 

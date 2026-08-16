@@ -10,10 +10,15 @@
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
        
-  
+   @role('admin')
+     <a href="{{ route('admin.bookings.create') }}"
+                class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-indigo-700">
+                اضافة حجز جديد
+            </a>
+    @endrole
 
-            <a href="{{ route('admin.bookings.create') }}"
-                class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+            <a href="{{ route('employee.bookings.create') }}"
+                class="inline-flex items-center justify-center rounded-md border border-transparent  px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-indigo-700">
                 اضافة حجز جديد
             </a>
         </div>

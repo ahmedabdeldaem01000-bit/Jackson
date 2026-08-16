@@ -43,20 +43,28 @@ new #[Title('Bookings')] class extends Component {
     ];
 
     /* Filters */
-    #[Computed]
-    public function bookings()
-    {
-        return Booking::query()
-            ->when($this->search, fn($q) => $q->search($this->search))
-            ->when($this->time, fn($q) => $q->where('time', $this->time))
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
-            ->whereDate('date', today())
-    ->orderByRaw('CASE WHEN turn = 0 THEN 1 ELSE 0 END')
-    ->orderBy('turn')
-    ->orderBy('time')
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate($this->perPage);
+#[Computed]
+public function bookings()
+{
+    $query = Booking::query();
+
+    $employee = auth('employee')->user();
+
+    if ($employee->hasAnyRole(['employee', 'barber'])) {
+        $query->where('employee_id', $employee->id);
     }
+
+    return $query
+        ->when($this->search, fn($q) => $q->search($this->search))
+        ->when($this->time, fn($q) => $q->where('time', $this->time))
+        ->when($this->status, fn($q) => $q->where('status', $this->status))
+        ->whereDate('date', today())
+        ->orderByRaw('CASE WHEN turn = 0 THEN 1 ELSE 0 END')
+        ->orderBy('turn')
+        ->orderBy('time')
+        ->orderBy($this->sortField, $this->sortDirection)
+        ->paginate($this->perPage);
+}
 
    
 
