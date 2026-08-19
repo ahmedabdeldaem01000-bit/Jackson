@@ -12,28 +12,42 @@ class Booking extends Model
 {
     /** @use HasFactory<\Database\Factories\BookingFactory> */
     use HasFactory;
-    protected $fillable=['time','status','turn','date','sub_service_id','user_id','employee_id'];
+    protected $fillable = [
+        'user_id',
+        'employee_id',
+        'date',
+        'time',
+        'turn',
+        'status',
+    ];
     protected $casts = [
     'date' => 'date',
 ];
 
-  public function service()
-{
-    return $this->belongsTo(Service::class);
-}
+    public function services()
+    {
+        return $this->belongsToMany(
+            SubService::class,
+            'booking_sub_service'
+        )->withTimestamps();
+    }
      public function subService()
 {
     return $this->belongsTo(SubService::class);
 }
 
-    public function user(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(
+            User::class
+        );
     }
 
-    public function employee(): BelongsTo
+     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(
+            Employee::class
+        );
     }
 
     public function scopeSearch(Builder $query, ?string $search): Builder

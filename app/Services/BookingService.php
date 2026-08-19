@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class BookingService
 {
@@ -34,12 +35,19 @@ class BookingService
             })
             ->get();
 
+
         foreach ($bookings as $booking) {
 
             $bookingTime = Carbon::parse($booking->date)
                 ->setTimeFromTimeString($booking->time);
 
-            // نفس الموظف ونفس الوقت
+
+            /*
+            |--------------------------------------------------------------------------
+            | نفس الموظف ونفس الوقت
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 $booking->employee_id == $employeeId &&
                 $bookingTime->format('H:i') === $requestedTime->format('H:i')
@@ -47,7 +55,13 @@ class BookingService
                 return 'هذا الموظف لديه حجز بالفعل في نفس الموعد.';
             }
 
-            // نفس العميل ونفس الوقت
+
+            /*
+            |--------------------------------------------------------------------------
+            | نفس العميل ونفس الوقت
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 $booking->user_id == $userId &&
                 $bookingTime->format('H:i') === $requestedTime->format('H:i')
@@ -55,11 +69,21 @@ class BookingService
                 return 'لديك حجز بالفعل في نفس الموعد.';
             }
 
+
             $minutes = abs(
-                $bookingTime->diffInMinutes($requestedTime, false)
+                $bookingTime->diffInMinutes(
+                    $requestedTime,
+                    false
+                )
             );
 
-            // الموظف لديه حجز خلال أقل من 10 دقائق
+
+            /*
+            |--------------------------------------------------------------------------
+            | الموظف لديه حجز خلال أقل من 10 دقائق
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 $booking->employee_id == $employeeId &&
                 $minutes < 10
@@ -67,7 +91,13 @@ class BookingService
                 return 'يوجد حجز آخر للموظف خلال أقل من 10 دقائق.';
             }
 
-            // العميل لديه حجز خلال أقل من 10 دقائق
+
+            /*
+            |--------------------------------------------------------------------------
+            | العميل لديه حجز خلال أقل من 10 دقائق
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 $booking->user_id == $userId &&
                 $minutes < 10
@@ -76,65 +106,194 @@ class BookingService
             }
         }
 
+
         return null;
     }
 
+
     /**
      * إنشاء الحجز
+     *
+     * Booking واحد يمكن أن يحتوي على خدمة أو أكثر.
      */
     public function create(array $data): Booking
     {
-        // dd($data);
         return DB::transaction(function () use ($data) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Services
+            |--------------------------------------------------------------------------
+            */
+
+            $serviceIds = $this->normalizeServiceIds(
+                $data['service_ids'] ?? []
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Legacy service_id
+            |--------------------------------------------------------------------------
+            |
+            | نحتفظ به مؤقتًا طالما العمود القديم ما زال موجودًا في bookings.
+            | نضع أول خدمة فيه فقط.
+            |
+            */
+
+            $legacyServiceId = $serviceIds[0];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create Booking
+            |--------------------------------------------------------------------------
+            */
+
             $booking = Booking::create([
-                'user_id'     => $data['user_id'],
-                'employee_id' => $data['employee_id'],
-                'sub_service_id'  => $data['sub_service_id'],
-                'date'        => $data['date'],
-                'time'        => $data['time'],
-                'status'      => 'pending',
-                'turn'        => 0,
+                'user_id' => (int) $data['user_id'],
+
+                'employee_id' => (int) $data['employee_id'],
+
+                'sub_service_id' => $legacyServiceId,
+
+                'date' => $data['date'],
+
+                'time' => $data['time'],
+
+                'status' => 'pending',
+
+                'turn' => 0,
             ]);
 
-            // الـ Queue بتاعة اليوم الحالي فقط
-            if (Carbon::parse($booking->date)->isToday()) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Attach All Services
+            |--------------------------------------------------------------------------
+            */
+
+            $booking->services()->sync($serviceIds);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reorder Today's Queue
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                Carbon::parse($booking->date)->isToday()
+            ) {
                 $this->reorderTodayTurns();
             }
 
-            return $booking->fresh();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Return Fresh Booking
+            |--------------------------------------------------------------------------
+            */
+
+            return $booking
+                ->fresh([
+                    'services',
+                    'user',
+                    'employee',
+                ]);
         });
     }
+
 
     /**
      * تعديل الحجز
      */
-    public function update(Booking $booking, array $data): bool
-    {
+    public function update(
+        Booking $booking,
+        array $data
+    ): bool {
         return DB::transaction(function () use ($booking, $data) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Services
+            |--------------------------------------------------------------------------
+            */
+
+            $serviceIds = $this->normalizeServiceIds(
+                $data['service_ids'] ?? []
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Legacy service_id
+            |--------------------------------------------------------------------------
+            */
+
+            $legacyServiceId = $serviceIds[0];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Original Date
+            |--------------------------------------------------------------------------
+            */
+
+            $oldDate = $booking->date;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Booking
+            |--------------------------------------------------------------------------
+            */
+
             $updated = $booking->update([
-                'user_id'     => $data['user_id'],
-                'employee_id' => $data['employee_id'],
-                'sub_service_id'  => $data['service_id'],
-                'date'        => $data['date'],
-                'time'        => $data['time'],
+                'user_id' => (int) $data['user_id'],
+
+                'employee_id' => (int) $data['employee_id'],
+
+                'sub_service_id' => $legacyServiceId,
+
+                'date' => $data['date'],
+
+                'time' => $data['time'],
             ]);
+
 
             if (!$updated) {
                 return false;
             }
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Sync Services
+            |--------------------------------------------------------------------------
+            */
+
+            $booking->services()->sync($serviceIds);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reorder Today's Queue
+            |--------------------------------------------------------------------------
+            */
+
             if (
-                Carbon::parse($booking->date)->isToday() ||
+                Carbon::parse($oldDate)->isToday() ||
                 Carbon::parse($data['date'])->isToday()
             ) {
                 $this->reorderTodayTurns();
             }
 
+
             return true;
         });
     }
+
 
     /**
      * إنهاء الحجز
@@ -145,32 +304,49 @@ class BookingService
             return false;
         }
 
+
         $bookingDate = Carbon::parse($booking->date)
             ->setTimeFromTimeString($booking->time);
+
 
         if (now()->lt($bookingDate)) {
             return false;
         }
 
+
         return DB::transaction(function () use ($booking) {
 
-            // الأول نخليه completed
-            
+            /*
+            |--------------------------------------------------------------------------
+            | Complete Booking
+            |--------------------------------------------------------------------------
+            */
+
             $updated = $booking->update([
                 'status' => 'completed',
-                'turn'   => 0,
+
+                'turn' => 0,
             ]);
+
 
             if (!$updated) {
                 return false;
             }
 
-            // بعدها نعيد ترتيب باقي الطابور
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reorder Queue
+            |--------------------------------------------------------------------------
+            */
+
             $this->reorderTodayTurns();
+
 
             return true;
         });
     }
+
 
     /**
      * إلغاء الحجز
@@ -181,20 +357,27 @@ class BookingService
 
             $updated = $booking->update([
                 'status' => 'cancelled',
-                'turn'   => 0,
+
+                'turn' => 0,
             ]);
+
 
             if (!$updated) {
                 return false;
             }
 
-            if (Carbon::parse($booking->date)->isToday()) {
+
+            if (
+                Carbon::parse($booking->date)->isToday()
+            ) {
                 $this->reorderTodayTurns();
             }
+
 
             return true;
         });
     }
+
 
     /**
      * حذف الحجز
@@ -205,17 +388,35 @@ class BookingService
 
             $booking = Booking::findOrFail($id);
 
-            $isToday = Carbon::parse($booking->date)->isToday();
+            $isToday = Carbon::parse(
+                $booking->date
+            )->isToday();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Booking
+            |--------------------------------------------------------------------------
+            |
+            | الـ pivot rows هتتمسح تلقائيًا بسبب cascadeOnDelete
+            |--------------------------------------------------------------------------
+            */
 
             $deleted = $booking->delete();
 
-            if ($deleted && $isToday) {
+
+            if (
+                $deleted &&
+                $isToday
+            ) {
                 $this->reorderTodayTurns();
             }
+
 
             return $deleted;
         });
     }
+
 
     /**
      * إعادة ترتيب أدوار حجوزات اليوم
@@ -224,24 +425,76 @@ class BookingService
     {
         $bookings = Booking::query()
             ->whereDate('date', today())
-            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereNotIn(
+                'status',
+                [
+                    'completed',
+                    'cancelled',
+                ]
+            )
             ->orderBy('time')
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
 
+
         foreach ($bookings as $index => $booking) {
+
             $booking->update([
                 'turn' => $index + 1,
             ]);
         }
 
-        // أي completed أو cancelled يبقى turn = 0
+
+        /*
+        |--------------------------------------------------------------------------
+        | Completed / Cancelled
+        |--------------------------------------------------------------------------
+        */
+
         Booking::query()
             ->whereDate('date', today())
-            ->whereIn('status', ['completed', 'cancelled'])
+            ->whereIn(
+                'status',
+                [
+                    'completed',
+                    'cancelled',
+                ]
+            )
             ->update([
                 'turn' => 0,
             ]);
+    }
+
+
+    /**
+     * تجهيز service IDs
+     */
+    protected function normalizeServiceIds(
+        array $serviceIds
+    ): array {
+        $serviceIds = collect($serviceIds)
+            ->filter(
+                fn ($id) => is_numeric($id)
+            )
+            ->map(
+                fn ($id) => (int) $id
+            )
+            ->filter(
+                fn ($id) => $id > 0
+            )
+            ->unique()
+            ->values()
+            ->toArray();
+
+
+        if (empty($serviceIds)) {
+            throw new InvalidArgumentException(
+                'يجب اختيار خدمة واحدة على الأقل.'
+            );
+        }
+
+
+        return $serviceIds;
     }
 }

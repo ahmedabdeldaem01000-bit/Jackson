@@ -319,4 +319,8 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+    // public function show()
+    // {
+    //     return view('web.auth.profile');
+    // }
 }

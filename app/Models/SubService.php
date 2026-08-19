@@ -18,8 +18,11 @@ class SubService extends Model
     {
         return $this->belongsTo(Service::class);
     }
-        public function booking(): BelongsTo
-    {
-        return $this->belongsTo(Booking::class);
-    }
+public function bookings()
+{
+    return $this->belongsToMany(
+        Booking::class,
+        'booking_sub_service'
+    )->withTimestamps();
+}
 }

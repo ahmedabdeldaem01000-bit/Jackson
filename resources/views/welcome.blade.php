@@ -7,7 +7,7 @@
  <x-sections.services />
  <x-sections.review />
  <x-sections.prices />
- <x-sections.booking />
+<livewire:home.booking />
  <section id="locations" class="w-full bg-white py-24">
 
     <div class="mx-auto max-w-7xl px-6">
@@ -29,7 +29,7 @@
             <div class="text-center">
 
                 <img
-                    src="{{ asset('images/about3.png') }}"
+                    src="{{ asset("images/about3.png") }}"
                     class="mx-auto h-52 w-52 rounded-full object-cover"
                 >
 
@@ -62,7 +62,7 @@
 <section
     id="news"
     class="relative h-[500px] w-full bg-fixed bg-center bg-cover"
-    style="background-image:url('{{ asset('images/15.jpg') }}')">
+    style="background-image:url('{{ asset("images/15.jpg") }}')">
 
     <div class="absolute inset-0 bg-black/40"></div>
 
@@ -87,6 +87,3 @@
 </section>
 
 @endsection
-
-
- 

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('date');
            
             // $table->foreignId('service_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('sub_service_id')->constrained()->cascadeOnDelete();
+            // $table->foreignId('sub_service_id')->constrained()->cascadeOnDelete();
             $table->enum('status', ['pending',  'completed', 'cancelled'])->default('pending');
                $table->unsignedInteger('turn')
                 ->default(0);

@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-
-#[Fillable(['name', 'email', 'password','phone'])]
+use Illuminate\Database\Eloquent\Casts\Attribute;
+#[Fillable(['name', 'email', 'password','phone','avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -45,5 +45,14 @@ class User extends Authenticatable
     public function bookings(): HasMany
 {
     return $this->hasMany(Booking::class);
+}
+
+protected function avatar(): Attribute
+{
+    return Attribute::make(
+        get: fn ($value) => $value 
+            ? asset('storage/' . $value) // مسار الصورة لو موجودة
+            : asset('images/logo4-removebg-preview.png') // مسار الصورة الافتراضية
+    );
 }
 }

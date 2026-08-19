@@ -4,6 +4,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\AuthAdminController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Customer\MyBooking;
+use App\Livewire\Customer\Profile\Show;
+
 
 
 /*
@@ -70,10 +73,27 @@ Route::post('/logout-user', [AuthController::class, 'logout'])
 
 Route::middleware('auth:customer')->group(function () {
 
-    // Customer routes here
+    Route::livewire(
+        '/profile',
+        'customer.profile.show'
+    )->name('customer.profile');
 
-});
+    Route::livewire(
+        '/profile/information',
+        'customer.profile.information'
+    )->name('customer.profile.information');
 
+    Route::livewire(
+        '/profile/bookings',
+        'customer.profile.bookings'
+    )->name('customer.profile.bookings');
+
+    Route::livewire(
+        '/profile/notifications',
+        'customer.profile.notifications'
+    )->name('customer.profile.notifications');
+
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -117,7 +137,7 @@ Route::prefix('admin')
         |--------------------------------------------------------------------------
         */
 
-        Route::livewire('/dashboard', 'pages::admin.dashboard')
+        Route::livewire('/dashboard', 'pages::dashboard')
             ->name('dashboard');
 
 

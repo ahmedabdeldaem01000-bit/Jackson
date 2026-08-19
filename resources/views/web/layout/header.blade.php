@@ -5,7 +5,7 @@
     <div
         class="max-w-[1400px] mx-auto flex items-center justify-between px-6 lg:px-12 py-7 transition-all duration-500 navbar-container">
 
-        <a href="#" class="shrink-0">
+        <a href="{{route('customer.profile')}}" class="shrink-0">
 
             <img
                 src="{{ asset('images/Untitled-4.png') }}"
