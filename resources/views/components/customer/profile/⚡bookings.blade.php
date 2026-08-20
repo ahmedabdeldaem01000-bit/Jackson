@@ -78,22 +78,22 @@ class extends Component
 
     public function getBookingsProperty()
     {
-        $bookings = Booking::query()
-            ->where('user_id', $this->customer->id)
-
-            ->when(
-                $this->statusFilter !== 'all',
-                function ($query) {
-                    $query->where(
-                        'status',
-                        $this->statusFilter
-                    );
-                }
-            )
-
-            ->orderByDesc('date')
-            ->orderByDesc('time')
-            ->paginate(10);
+       $bookings = Booking::query()
+    ->with([
+        'services:id,name',
+        'employee:id,name',
+    ])
+    ->where('user_id', $this->customer->id)
+    ->when(
+        $this->statusFilter !== 'all',
+        fn ($query) => $query->where(
+            'status',
+            $this->statusFilter
+        )
+    )
+    ->orderByDesc('date')
+    ->orderByDesc('time')
+    ->paginate(10);
 
 
         /*
@@ -386,136 +386,43 @@ class extends Component
     |--------------------------------------------------------------------------
     */
 
-    public function openDetails(int $bookingId): void
-    {
-        $booking = Booking::query()
-            ->where(
-                'id',
-                $bookingId
-            )
-            ->where(
-                'user_id',
-                $this->customer->id
-            )
-            ->first();
+  public function openDetails(int $bookingId): void
+{
+    $booking = Booking::query()
+        ->with([
+            'employee:id,name',
+            'services:id,name',
+        ])
+        ->where('id', $bookingId)
+        ->where('user_id', $this->customer->id)
+        ->first();
 
-
-        if (!$booking) {
-            return;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Employee
-        |--------------------------------------------------------------------------
-        */
-
-        $employee = Employee::query()
-            ->find(
-                $booking->employee_id
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Services
-        |--------------------------------------------------------------------------
-        */
-
-        $storedServiceIds =
-            $booking->getAttribute('service_ids');
-
-
-        if (is_string($storedServiceIds)) {
-
-            $decoded = json_decode(
-                $storedServiceIds,
-                true
-            );
-
-            if (
-                json_last_error() === JSON_ERROR_NONE
-                && is_array($decoded)
-            ) {
-                $storedServiceIds = $decoded;
-            } else {
-                $storedServiceIds = [];
-            }
-        }
-
-
-        if (!is_array($storedServiceIds)) {
-            $storedServiceIds = [];
-        }
-
-
-        $serviceIds = collect(
-            $storedServiceIds
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Fallback old structure
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $serviceIds->isEmpty()
-            && $booking->service_id
-        ) {
-            $serviceIds = collect([
-                $booking->service_id
-            ]);
-        }
-
-
-        $serviceIds = $serviceIds
-            ->filter()
-            ->map(
-                fn ($id) => (int) $id
-            )
-            ->unique()
-            ->values();
-
-
-        $services = SubService::query()
-            ->whereIn(
-                'id',
-                $serviceIds
-            )
-            ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Selected Booking
-        |--------------------------------------------------------------------------
-        */
-
-        $this->selectedBooking = [
-            'id' => $booking->id,
-
-            'date' => $booking->date,
-
-            'time' => $booking->time,
-
-            'employee_name' =>
-                $employee?->name
-                ?? 'غير محدد',
-
-            'service_names' =>
-                $services
-                    ->pluck('name')
-                    ->values()
-                    ->all(),
-
-            'turn' => (int) $booking->turn,
-
-            'status' => $booking->status,
-        ];
+    if (!$booking) {
+        return;
     }
+
+    $this->selectedBooking = [
+        'id' => $booking->id,
+
+        'date' => $booking->date,
+
+        'time' => $booking->time,
+
+        'employee_name' =>
+            $booking->employee?->name
+            ?? 'غير محدد',
+
+        'service_names' =>
+            $booking->services
+                ->pluck('name')
+                ->values()
+                ->all(),
+
+        'turn' => (int) $booking->turn,
+
+        'status' => $booking->status,
+    ];
+}
 
 
     public function closeDetails(): void
@@ -859,46 +766,35 @@ class extends Component
 
 
                                 {{-- Services --}}
-                                <td class="px-6 py-5">
+                             <td class="px-6 py-5">
+    <div class="flex max-w-[280px] flex-wrap gap-1.5">
 
-                                    <div
-                                        class="flex max-w-[280px] flex-wrap gap-1.5"
-                                    >
+        @forelse($booking->services as $service)
 
-                                        @forelse(
-                                            $booking->service_names ?? []
-                                            as $serviceName
-                                        )
+            <span
+                class="rounded-full bg-[#f8eee9] px-2.5 py-1 text-xs font-bold text-[#7b4537]"
+            >
+                {{ $service->name }}
+            </span>
 
-                                            <span
-                                                class="rounded-full bg-[#f8eee9] px-2.5 py-1 text-xs font-bold text-[#7b4537]"
-                                            >
-                                                {{ $serviceName }}
-                                            </span>
+        @empty
 
-                                        @empty
+            <span class="text-sm text-gray-400">
+                غير محددة
+            </span>
 
-                                            <span class="text-sm text-gray-400">
-                                                غير محددة
-                                            </span>
+        @endforelse
 
-                                        @endforelse
-
-                                    </div>
-
-                                </td>
+    </div>
+</td>
 
 
                                 {{-- Employee --}}
-                                <td class="px-6 py-5">
-
-                                    <span
-                                        class="font-semibold text-gray-700"
-                                    >
-                                        {{ $booking->employee_name }}
-                                    </span>
-
-                                </td>
+                           <td class="px-6 py-5">
+    <span class="font-semibold text-gray-700">
+        {{ $booking->employee?->name ?? 'غير محدد' }}
+    </span>
+</td>
 
 
                                 {{-- Turn --}}
@@ -1208,40 +1104,32 @@ class extends Component
 
 
                     {{-- Services --}}
-                    <div
-                        class="rounded-2xl bg-[#fcfaf9] p-4"
-                    >
+   <div class="rounded-2xl bg-[#fcfaf9] p-4">
 
-                        <p class="text-xs text-gray-400">
-                            الخدمات
-                        </p>
+    <p class="text-xs text-gray-400">
+        الخدمات
+    </p>
 
-                        <div
-                            class="mt-3 flex flex-wrap gap-2"
-                        >
+    <div class="mt-3 flex flex-wrap gap-2">
+@forelse($selectedBooking['service_names'] ?? [] as $serviceName)
 
-                            @forelse(
-                                $selectedBooking['service_names'] ?? []
-                                as $serviceName
-                            )
+    <span
+        class="rounded-full bg-[#f5e9e4] px-3 py-1.5 text-xs font-bold text-[#7b4537]"
+    >
+        {{ $serviceName }}
+    </span>
 
-                                <span
-                                    class="rounded-full bg-[#f5e9e4] px-3 py-1.5 text-xs font-bold text-[#7b4537]"
-                                >
-                                    {{ $serviceName }}
-                                </span>
+@empty
 
-                            @empty
+    <span class="text-sm text-gray-400">
+        غير محددة
+    </span>
 
-                                <span class="text-sm text-gray-400">
-                                    غير محددة
-                                </span>
+@endforelse
 
-                            @endforelse
+    </div>
 
-                        </div>
-
-                    </div>
+</div>
 
 
                     {{-- Turn + Status --}}
@@ -1292,7 +1180,7 @@ class extends Component
 
                                     <span
                                         class="inline-flex rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
-                                    >
+                               >   
                                         قيد الانتظار
                                     </span>
 
