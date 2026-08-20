@@ -1,444 +1,733 @@
 <?php
 
-use App\Models\Booking;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
-new #[Title('الملف الشخصي')] class extends Component
+new
+    #[Layout('layouts.customer')]
+    #[Title('الملف الشخصي')]
+class extends Component
 {
+    use WithFileUploads;
+
     public $customer;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile Information
+    |--------------------------------------------------------------------------
+    */
+
+    public string $name = '';
+    public string $email = '';
+    public string $phone = '';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Avatar
+    |--------------------------------------------------------------------------
+    */
+
+    public $avatar = null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password
+    |--------------------------------------------------------------------------
+    */
+
+    public string $current_password = '';
+    public string $password = '';
+    public string $password_confirmation = '';
 
     public function mount(): void
     {
         $this->customer = Auth::guard('customer')->user();
 
         abort_unless($this->customer, 403);
+
+        $this->name = $this->customer->name ?? '';
+        $this->email = $this->customer->email ?? '';
+        $this->phone = $this->customer->phone ?? '';
     }
 
-    public function getTotalBookingsProperty(): int
+    /*
+    |--------------------------------------------------------------------------
+    | Update Profile
+    |--------------------------------------------------------------------------
+    */
+
+    public function updateInformation(): void
     {
-        return Booking::query()
-            ->where('user_id', $this->customer->id)
-            ->count();
+        $this->validate([
+            'name' => [
+                'required',
+                'string',
+                'min:2',
+                'max:255',
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')
+                    ->ignore($this->customer->id),
+            ],
+
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'avatar' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+        ], [
+            'name.required' => 'الاسم مطلوب.',
+            'name.min' => 'الاسم يجب أن يكون حرفين على الأقل.',
+
+            'email.required' => 'البريد الإلكتروني مطلوب.',
+            'email.email' => 'البريد الإلكتروني غير صحيح.',
+            'email.unique' => 'البريد الإلكتروني مستخدم بالفعل.',
+
+            'phone.max' => 'رقم الهاتف غير صحيح.',
+
+            'avatar.image' => 'الملف يجب أن يكون صورة.',
+            'avatar.mimes' => 'الصورة يجب أن تكون JPG أو PNG أو WEBP.',
+            'avatar.max' => 'حجم الصورة يجب ألا يتجاوز 2MB.',
+        ]);
+
+        $this->customer->name = $this->name;
+        $this->customer->email = $this->email;
+        $this->customer->phone = $this->phone;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save Avatar
+        |--------------------------------------------------------------------------
+        */
+
+        if ($this->avatar) {
+            $path = $this->avatar->store(
+                'customers',
+                'public'
+            );
+
+            $this->customer->avatar = $path;
+        }
+
+        $this->customer->save();
+
+        $this->customer->refresh();
+
+        $this->reset('avatar');
+
+        session()->flash(
+            'profile_success',
+            'تم تحديث بيانات الحساب بنجاح.'
+        );
     }
 
-    public function getPendingBookingsProperty(): int
-    {
-        return Booking::query()
-            ->where('user_id', $this->customer->id)
-            ->where('status', 'pending')
-            ->count();
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Update Password
+    |--------------------------------------------------------------------------
+    */
 
-    public function getCompletedBookingsProperty(): int
+    public function updatePassword(): void
     {
-        return Booking::query()
-            ->where('user_id', $this->customer->id)
-            ->where('status', 'completed')
-            ->count();
-    }
+        $this->validate([
+            'current_password' => [
+                'required',
+                'current_password:customer',
+            ],
 
-    public function getLatestBookingProperty(): ?Booking
-    {
-        return Booking::query()
-            ->where('user_id', $this->customer->id)
-            ->latest('created_at')
-            ->first();
+            'password' => [
+                'required',
+                'confirmed',
+                Password::min(8),
+            ],
+        ], [
+            'current_password.required' =>
+                'اكتب كلمة السر الحالية.',
+
+            'current_password.current_password' =>
+                'كلمة السر الحالية غير صحيحة.',
+
+            'password.required' =>
+                'كلمة السر الجديدة مطلوبة.',
+
+            'password.confirmed' =>
+                'تأكيد كلمة السر غير مطابق.',
+
+            'password.min' =>
+                'كلمة السر يجب أن تكون 8 أحرف على الأقل.',
+        ]);
+
+        $this->customer->password = Hash::make(
+            $this->password
+        );
+
+        $this->customer->save();
+
+        $this->reset([
+            'current_password',
+            'password',
+            'password_confirmation',
+        ]);
+
+        session()->flash(
+            'password_success',
+            'تم تغيير كلمة السر بنجاح.'
+        );
     }
 };
 ?>
 
-<div
-    dir="rtl"
-    class="min-h-screen bg-[#faf8f6] py-8 sm:py-12"
->
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<div class="px-4 py-8 sm:px-6 lg:px-8">
+
+    <div class="mx-auto max-w-5xl">
 
         {{-- ========================================================= --}}
         {{-- Header --}}
         {{-- ========================================================= --}}
 
         <div class="mb-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
-                <div>
-                    <span
-                        class="inline-flex items-center rounded-full bg-[#f3e5de] px-4 py-2 text-xs font-bold text-[#a56a58]"
-                    >
-                        حسابي
-                    </span>
+            <span
+                class="inline-flex rounded-full bg-[#f3e5de] px-4 py-2 text-xs font-bold text-[#a56a58]"
+            >
+                حسابي
+            </span>
 
-                    <h1
-                        class="mt-4 text-3xl font-bold tracking-tight text-[#4b2a22] sm:text-4xl"
-                    >
-                        الملف الشخصي
-                    </h1>
+            <h1 class="mt-4 text-3xl font-bold text-[#4b2a22]">
+                الملف الشخصي
+            </h1>
 
-                    <p class="mt-2 text-sm leading-7 text-gray-500">
-                        من هنا تقدر تتابع بيانات حسابك وحجوزاتك وإشعاراتك.
-                    </p>
+            <p class="mt-2 text-sm leading-7 text-gray-500">
+                إدارة بياناتك الشخصية وصورة الحساب وكلمة السر.
+            </p>
+
+        </div>
+
+
+        {{-- ========================================================= --}}
+        {{-- Profile Success --}}
+        {{-- ========================================================= --}}
+
+        @if(session('profile_success'))
+
+            <div
+                class="mb-6 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-semibold text-green-700"
+            >
+
+                <span
+                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-100"
+                >
+                    ✓
+                </span>
+
+                {{ session('profile_success') }}
+
+            </div>
+
+        @endif
+
+
+        {{-- ========================================================= --}}
+        {{-- Password Success --}}
+        {{-- ========================================================= --}}
+
+        @if(session('password_success'))
+
+            <div
+                class="mb-6 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-semibold text-green-700"
+            >
+
+                <span
+                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-100"
+                >
+                    ✓
+                </span>
+
+                {{ session('password_success') }}
+
+            </div>
+
+        @endif
+
+
+        {{-- ========================================================= --}}
+        {{-- Personal Information --}}
+        {{-- ========================================================= --}}
+
+        <section
+            class="overflow-hidden rounded-[2rem] border border-[#eaded8] bg-white shadow-sm"
+        >
+
+            {{-- Cover --}}
+            <div
+                class="h-36 bg-gradient-to-br from-[#5b3025] via-[#754638] to-[#a56a58]"
+            ></div>
+
+
+            <div class="px-6 pb-8 sm:px-8">
+
+                {{-- ================================================= --}}
+                {{-- Avatar --}}
+                {{-- ================================================= --}}
+
+                <div
+                    class="-mt-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+                >
+
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+
+                        <div class="shrink-0">
+
+                            @if($avatar)
+
+                                <img
+                                    src="{{ $avatar->temporaryUrl() }}"
+                                    alt="{{ $customer->name }}"
+                                    class="h-24 w-24 rounded-3xl border-4 border-white object-cover shadow-lg"
+                                >
+
+                            @elseif($customer->avatar)
+
+                                <img
+                                    src="{{ asset($customer->avatar) }}"
+                                    alt="{{ $customer->name }}"
+                                    class="h-24 w-24 rounded-3xl border-4 border-white object-cover shadow-lg"
+                                >
+
+                            @else
+
+                                <div
+                                    class="flex h-24 w-24 items-center justify-center rounded-3xl border-4 border-white bg-[#f3e5de] text-3xl font-bold text-[#7d4a3a] shadow-lg"
+                                >
+                                    {{ strtoupper(mb_substr($customer->name ?? 'U', 0, 1)) }}
+                                </div>
+
+                            @endif
+
+                        </div>
+
+
+                        <div class="pb-1">
+
+                            <h2 class="text-2xl font-bold text-[#4b2a22]">
+                                {{ $customer->name }}
+                            </h2>
+
+                            <p class="mt-1 text-sm text-gray-500">
+                                {{ $customer->email }}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- Change Avatar --}}
+                    <div>
+
+                        <label
+                            for="avatar"
+                            class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#dfcec6] bg-white px-4 py-3 text-sm font-bold text-[#6d4235] transition hover:bg-[#fffaf8]"
+                        >
+
+                            <svg
+                                class="h-4 w-4"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M12 5v14"/>
+                                <path d="M5 12h14"/>
+                            </svg>
+
+                            تغيير الصورة
+
+                        </label>
+
+                        <input
+                            id="avatar"
+                            type="file"
+                            wire:model="avatar"
+                            accept="image/png,image/jpeg,image/webp"
+                            class="hidden"
+                        >
+
+                    </div>
+
                 </div>
 
-                <div class="flex items-center gap-3">
 
-                    <a
-                        href="{{ route('customer.profile.information') }}"
-                        class="inline-flex items-center gap-2 rounded-xl border border-[#e8d8d0] bg-white px-4 py-2.5 text-sm font-semibold text-[#6d4235] shadow-sm transition hover:bg-[#fffaf8]"
+                @error('avatar')
+
+                    <p class="mt-3 text-sm text-red-600">
+                        {{ $message }}
+                    </p>
+
+                @enderror
+
+
+                <div
+                    wire:loading
+                    wire:target="avatar"
+                    class="mt-3 text-xs font-semibold text-[#9a6252]"
+                >
+                    جاري تجهيز الصورة...
+                </div>
+
+
+                {{-- ================================================= --}}
+                {{-- Information Form --}}
+                {{-- ================================================= --}}
+
+                <form
+                    wire:submit="updateInformation"
+                    class="mt-8"
+                >
+
+                    <div class="grid gap-6 md:grid-cols-2">
+
+                        {{-- Name --}}
+                        <div>
+
+                            <label
+                                for="name"
+                                class="mb-2 block text-sm font-bold text-gray-700"
+                            >
+                                الاسم
+                            </label>
+
+                            <input
+                                id="name"
+                                type="text"
+                                wire:model="name"
+                                autocomplete="name"
+                                class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                                placeholder="اكتب اسمك"
+                            >
+
+                            @error('name')
+
+                                <p class="mt-2 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- Email --}}
+                        <div>
+
+                            <label
+                                for="email"
+                                class="mb-2 block text-sm font-bold text-gray-700"
+                            >
+                                البريد الإلكتروني
+                            </label>
+
+                            <input
+                                id="email"
+                                type="email"
+                                wire:model="email"
+                                autocomplete="email"
+                                class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                                placeholder="example@email.com"
+                            >
+
+                            @error('email')
+
+                                <p class="mt-2 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- Phone --}}
+                        <div>
+
+                            <label
+                                for="phone"
+                                class="mb-2 block text-sm font-bold text-gray-700"
+                            >
+                                رقم الهاتف
+                            </label>
+
+                            <input
+                                id="phone"
+                                type="tel"
+                                wire:model="phone"
+                                autocomplete="tel"
+                                class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                                placeholder="01xxxxxxxxx"
+                            >
+
+                            @error('phone')
+
+                                <p class="mt-2 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- Save --}}
+                    <div
+                        class="mt-8 flex justify-end border-t border-gray-100 pt-6"
                     >
+
+                        <button
+                            type="submit"
+                            wire:loading.attr="disabled"
+                            wire:target="updateInformation"
+                            class="inline-flex items-center gap-2 rounded-2xl bg-[#5b3025] px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#713c30] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+
+                            <span
+                                wire:loading.remove
+                                wire:target="updateInformation"
+                            >
+                                حفظ التعديلات
+                            </span>
+
+                            <span
+                                wire:loading
+                                wire:target="updateInformation"
+                            >
+                                جاري الحفظ...
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        {{-- ========================================================= --}}
+        {{-- Password --}}
+        {{-- ========================================================= --}}
+
+        <section
+            class="mt-6 rounded-[2rem] border border-[#eaded8] bg-white shadow-sm"
+        >
+
+            <div
+                class="border-b border-gray-100 px-6 py-6 sm:px-8"
+            >
+
+                <div class="flex items-center gap-4">
+
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f8eee9] text-[#9a6252]"
+                    >
+
                         <svg
-                            class="h-4 w-4"
+                            class="h-6 w-6"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="1.8"
                         >
-                            <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
-                            <path d="M4 20a8 8 0 0 1 16 0"/>
+                            <rect
+                                x="4"
+                                y="10"
+                                width="16"
+                                height="11"
+                                rx="2"
+                            />
+
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+
+                            <circle cx="12" cy="15" r="1"/>
                         </svg>
 
-                        تعديل البيانات
-                    </a>
+                    </div>
+
+                    <div>
+
+                        <h2 class="text-xl font-bold text-[#4b2a22]">
+                            كلمة السر
+                        </h2>
+
+                        <p class="mt-1 text-sm text-gray-500">
+                            غيّر كلمة السر الخاصة بحسابك.
+                        </p>
+
+                    </div>
 
                 </div>
 
             </div>
-        </div>
 
 
-        {{-- ========================================================= --}}
-        {{-- Main Grid --}}
-        {{-- ========================================================= --}}
+            <form
+                wire:submit="updatePassword"
+                class="space-y-6 px-6 py-7 sm:px-8"
+            >
 
-        <div class="grid gap-6 lg:grid-cols-12">
+                {{-- Current Password --}}
+                <div>
 
-     
+                    <label
+                        for="current_password"
+                        class="mb-2 block text-sm font-bold text-gray-700"
+                    >
+                        كلمة السر الحالية
+                    </label>
 
+                    <input
+                        id="current_password"
+                        type="password"
+                        wire:model="current_password"
+                        autocomplete="current-password"
+                        class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                        placeholder="••••••••"
+                    >
 
-            {{-- ===================================================== --}}
-            {{-- Main Content --}}
-            {{-- ===================================================== --}}
+                    @error('current_password')
 
-            <main class="space-y-6 lg:col-span-8">
-
-                {{-- Welcome --}}
-                <section
-                    class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5b3025] to-[#8c5747] p-7 text-white shadow-[0_20px_60px_rgba(91,48,37,0.16)] sm:p-8"
-                >
-
-                    <div
-                        class="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl"
-                    ></div>
-
-                    <div
-                        class="absolute -bottom-20 -right-10 h-52 w-52 rounded-full bg-white/10 blur-3xl"
-                    ></div>
-
-                    <div class="relative">
-
-                        <p class="text-sm font-medium text-white/70">
-                            أهلاً بيك 👋
+                        <p class="mt-2 text-sm text-red-600">
+                            {{ $message }}
                         </p>
 
-                        <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
-                            {{ $customer->name }}
-                        </h2>
+                    @enderror
 
-                        <p class="mt-3 max-w-xl text-sm leading-7 text-white/75">
-                            كل حاجة تخص حسابك وحجوزاتك موجودة هنا في مكان واحد.
-                        </p>
+                </div>
+
+
+                <div class="grid gap-6 md:grid-cols-2">
+
+                    {{-- New --}}
+                    <div>
+
+                        <label
+                            for="password"
+                            class="mb-2 block text-sm font-bold text-gray-700"
+                        >
+                            كلمة السر الجديدة
+                        </label>
+
+                        <input
+                            id="password"
+                            type="password"
+                            wire:model="password"
+                            autocomplete="new-password"
+                            class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                            placeholder="••••••••"
+                        >
+
+                        @error('password')
+
+                            <p class="mt-2 text-sm text-red-600">
+                                {{ $message }}
+                            </p>
+
+                        @enderror
 
                     </div>
 
-                </section>
 
-                @if($customer->avatar)
-    <img
-          src="{{ asset( $customer->avatar) }}"
-        alt="{{ $customer->name }}"
-        class="h-20 w-20 rounded-3xl object-cover"
-    >
-@else
-    <div
-        class="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#f5e9e4] text-3xl font-bold text-[#7d4a3a]"
-    >
-        {{ strtoupper(mb_substr($customer->name ?? 'U', 0, 1)) }}
-    </div>
-@endif
+                    {{-- Confirm --}}
+                    <div>
 
-                {{-- ================================================= --}}
-                {{-- Stats --}}
-                {{-- ================================================= --}}
+                        <label
+                            for="password_confirmation"
+                            class="mb-2 block text-sm font-bold text-gray-700"
+                        >
+                            تأكيد كلمة السر
+                        </label>
 
-                <section class="grid gap-4 sm:grid-cols-3">
+                        <input
+                            id="password_confirmation"
+                            type="password"
+                            wire:model="password_confirmation"
+                            autocomplete="new-password"
+                            class="w-full rounded-2xl border border-gray-200 bg-[#fcfaf9] px-4 py-3.5 text-sm text-gray-800 outline-none transition focus:border-[#a56a58] focus:bg-white focus:ring-4 focus:ring-[#a56a58]/10"
+                            placeholder="••••••••"
+                        >
 
-                    {{-- Total --}}
-                    <div
-                        class="rounded-[1.5rem] border border-[#eaded8] bg-white p-5 shadow-sm"
-                    >
-                        <div class="flex items-center justify-between">
+                        @error('password_confirmation')
 
-                            <div>
-                                <p class="text-sm text-gray-500">
-                                    إجمالي الحجوزات
-                                </p>
+                            <p class="mt-2 text-sm text-red-600">
+                                {{ $message }}
+                            </p>
 
-                                <p class="mt-2 text-3xl font-bold text-[#4b2a22]">
-                                    {{ $this->totalBookings }}
-                                </p>
-                            </div>
+                        @enderror
 
-                            <div
-                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f8eee9] text-[#9a6252]"
-                            >
-                                <svg
-                                    class="h-6 w-6"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                >
-                                    <rect
-                                        x="3"
-                                        y="5"
-                                        width="18"
-                                        height="16"
-                                        rx="2"
-                                    />
-                                    <path d="M16 3v4M8 3v4M3 10h18"/>
-                                </svg>
-                            </div>
-
-                        </div>
                     </div>
 
-
-                    {{-- Pending --}}
-                    <div
-                        class="rounded-[1.5rem] border border-[#eaded8] bg-white p-5 shadow-sm"
-                    >
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <p class="text-sm text-gray-500">
-                                    الحجوزات القادمة
-                                </p>
-
-                                <p class="mt-2 text-3xl font-bold text-[#4b2a22]">
-                                    {{ $this->pendingBookings }}
-                                </p>
-                            </div>
-
-                            <div
-                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"
-                            >
-                                <svg
-                                    class="h-6 w-6"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                >
-                                    <circle cx="12" cy="12" r="9"/>
-                                    <path d="M12 7v5l3 2"/>
-                                </svg>
-                            </div>
-
-                        </div>
-                    </div>
+                </div>
 
 
-                    {{-- Completed --}}
-                    <div
-                        class="rounded-[1.5rem] border border-[#eaded8] bg-white p-5 shadow-sm"
-                    >
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <p class="text-sm text-gray-500">
-                                    الحجوزات المكتملة
-                                </p>
-
-                                <p class="mt-2 text-3xl font-bold text-[#4b2a22]">
-                                    {{ $this->completedBookings }}
-                                </p>
-                            </div>
-
-                            <div
-                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-600"
-                            >
-                                <svg
-                                    class="h-6 w-6"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                >
-                                    <circle cx="12" cy="12" r="9"/>
-                                    <path d="m8 12 2.5 2.5L16 9"/>
-                                </svg>
-                            </div>
-
-                        </div>
-                    </div>
-
-                </section>
+                <p class="text-xs leading-6 text-gray-400">
+                    كلمة السر الجديدة يجب أن تكون 8 أحرف على الأقل.
+                </p>
 
 
-                {{-- ================================================= --}}
-                {{-- Latest Booking --}}
-                {{-- ================================================= --}}
-
-                <section
-                    class="rounded-[2rem] border border-[#eaded8] bg-white p-6 shadow-sm sm:p-7"
+                {{-- Password Save --}}
+                <div
+                    class="flex justify-end border-t border-gray-100 pt-6"
                 >
 
-                    <div class="flex items-center justify-between gap-4">
+                    <button
+                        type="submit"
+                        wire:loading.attr="disabled"
+                        wire:target="updatePassword"
+                        class="inline-flex items-center gap-2 rounded-2xl bg-[#5b3025] px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#713c30] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
 
-                        <div>
-                            <h3 class="text-xl font-bold text-[#4b2a22]">
-                                آخر حجز
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500">
-                                آخر نشاط ظاهر على حسابك.
-                            </p>
-                        </div>
-
-                        <a
-                            href="{{ route('customer.profile.bookings') }}"
-                            class="text-sm font-bold text-[#9a6252] transition hover:text-[#6d4033]"
+                        <span
+                            wire:loading.remove
+                            wire:target="updatePassword"
                         >
-                            عرض كل الحجوزات
-                        </a>
+                            تغيير كلمة السر
+                        </span>
 
-                    </div>
-
-
-                    @if($this->latestBooking)
-
-                        @php
-                            $booking = $this->latestBooking;
-                        @endphp
-
-                        <div
-                            class="mt-6 rounded-2xl border border-[#eee2dc] bg-[#fcfaf9] p-5"
+                        <span
+                            wire:loading
+                            wire:target="updatePassword"
                         >
+                            جاري التحديث...
+                        </span>
 
-                            <div class="grid gap-5 sm:grid-cols-3">
+                    </button>
 
-                                {{-- Date --}}
-                                <div>
-                                    <p class="text-xs font-semibold text-gray-400">
-                                        التاريخ
-                                    </p>
+                </div>
 
-                                    <p class="mt-2 font-bold text-[#4b2a22]">
-                                        {{ $booking->date }}
-                                    </p>
-                                </div>
+            </form>
 
-
-                                {{-- Time --}}
-                                <div>
-                                    <p class="text-xs font-semibold text-gray-400">
-                                        الوقت
-                                    </p>
-
-                                    <p class="mt-2 font-bold text-[#4b2a22]">
-                                        {{ $booking->time }}
-                                    </p>
-                                </div>
-
-
-                                {{-- Status --}}
-                                <div>
-                                    <p class="text-xs font-semibold text-gray-400">
-                                        الحالة
-                                    </p>
-
-                                    @if($booking->status === 'completed')
-
-                                        <span
-                                            class="mt-2 inline-flex items-center rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700"
-                                        >
-                                            مكتمل
-                                        </span>
-
-                                    @elseif($booking->status === 'pending')
-
-                                        <span
-                                            class="mt-2 inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
-                                        >
-                                            قيد الانتظار
-                                        </span>
-
-                                    @else
-
-                                        <span
-                                            class="mt-2 inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600"
-                                        >
-                                            {{ $booking->status }}
-                                        </span>
-
-                                    @endif
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    @else
-
-                        <div
-                            class="mt-6 rounded-2xl border border-dashed border-[#decfc8] bg-[#fcfaf9] px-6 py-12 text-center"
-                        >
-
-                            <div
-                                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5e9e4] text-[#9a6252]"
-                            >
-                                <svg
-                                    class="h-7 w-7"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.7"
-                                >
-                                    <rect
-                                        x="3"
-                                        y="5"
-                                        width="18"
-                                        height="16"
-                                        rx="2"
-                                    />
-                                    <path d="M16 3v4M8 3v4M3 10h18"/>
-                                </svg>
-                            </div>
-
-                            <h4 class="mt-5 text-lg font-bold text-[#4b2a22]">
-                                لسه مفيش حجوزات
-                            </h4>
-
-                            <p class="mx-auto mt-2 max-w-md text-sm leading-7 text-gray-500">
-                                أول ما تعمل حجز هيظهر هنا وتقدر تتابع حالته من صفحة حجوزاتي.
-                            </p>
-
-                        </div>
-
-                    @endif
-
-                </section>
-
-
-                {{-- ================================================= --}}
-                {{-- Quick Links --}}
-                {{-- ================================================= --}}
-
-                
-            </main>
-
-        </div>
+        </section>
 
     </div>
 </div>

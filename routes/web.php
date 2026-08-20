@@ -79,21 +79,15 @@ Route::middleware('auth:customer')->group(function () {
     )->name('customer.profile');
 
     Route::livewire(
-        '/profile/information',
-        'customer.profile.information'
-    )->name('customer.profile.information');
-
-    Route::livewire(
         '/profile/bookings',
         'customer.profile.bookings'
     )->name('customer.profile.bookings');
 
     Route::livewire(
-        '/profile/notifications',
-        'customer.profile.notifications'
-    )->name('customer.profile.notifications');
-
-    });
+        '/profile/current-booking',
+        'customer.profile.current-booking'
+    )->name('customer.profile.current-booking');
+});
 
 /*
 |--------------------------------------------------------------------------
